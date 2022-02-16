@@ -24,6 +24,7 @@ load(
 
 ver_mode = 'pr'
 
+
 def docs_pipelines(edition):
     steps = initialize_step(edition, platform='linux', ver_mode=ver_mode)
     steps.extend([
@@ -40,16 +41,12 @@ def docs_pipelines(edition):
     ])
 
     trigger = {
-        'event': {
-            'include': [
-                'pull_request',
-            ]
-        },
-        'paths': {
-            'include': [
-                'docs/**',
-            ],
-        },
+        'event': [
+            'pull_request',
+        ],
+        'paths': [
+            'docs/**',
+        ],
     }
     return [
         pipeline(

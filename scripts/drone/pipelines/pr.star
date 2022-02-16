@@ -116,15 +116,8 @@ def pr_pipelines(edition):
         ])
 
     trigger = {
-        'event': {
-            'include': [
-                'pull_request',
-            ]
-        },
+        'event': ['pull_request',],
         'paths': {
-            'include': [
-                '*',
-            ],
             'exclude': [
                 'docs/**',
             ],

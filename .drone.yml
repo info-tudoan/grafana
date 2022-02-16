@@ -92,13 +92,10 @@ steps:
   name: test-frontend
 trigger:
   event:
-    include:
-    - pull_request
+  - pull_request
   paths:
     exclude:
     - docs/**
-    include:
-    - '*'
 type: docker
 volumes:
 - host:
@@ -329,13 +326,10 @@ steps:
     path: /var/run/docker.sock
 trigger:
   event:
-    include:
-    - pull_request
+  - pull_request
   paths:
     exclude:
     - docs/**
-    include:
-    - '*'
 type: docker
 volumes:
 - host:
@@ -410,13 +404,10 @@ steps:
   name: mysql-integration-tests
 trigger:
   event:
-    include:
-    - pull_request
+  - pull_request
   paths:
     exclude:
     - docs/**
-    include:
-    - '*'
 type: docker
 volumes:
 - host:
@@ -502,11 +493,9 @@ steps:
   name: build-docs-website
 trigger:
   event:
-    include:
-    - pull_request
+  - pull_request
   paths:
-    include:
-    - docs/**
+  - docs/**
 type: docker
 volumes:
 - host:
@@ -4311,6 +4300,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: 27b1b781d0e904c51c902e4f59ea0253f6bd819fa00cc90fbca323983c3bb925
+hmac: eaee38708a4743c1d004673f47274cd8b5e6077cd2fa71367137437e069c23cb
 
 ...
