@@ -122,6 +122,9 @@ def pr_pipelines(edition):
             ]
         },
         'paths': {
+            'include': [
+                '*',
+            ],
             'exclude': [
                 'docs/**',
             ],
