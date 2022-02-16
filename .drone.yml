@@ -95,7 +95,7 @@ trigger:
   - pull_request
   paths:
     exclude:
-    - docs/**
+    - README.md
 type: docker
 volumes:
 - host:
@@ -329,7 +329,7 @@ trigger:
   - pull_request
   paths:
     exclude:
-    - docs/**
+    - README.md
 type: docker
 volumes:
 - host:
@@ -407,7 +407,7 @@ trigger:
   - pull_request
   paths:
     exclude:
-    - docs/**
+    - README.md
 type: docker
 volumes:
 - host:
@@ -495,7 +495,7 @@ trigger:
   event:
   - pull_request
   paths:
-  - docs/**
+  - README.md
 type: docker
 volumes:
 - host:
@@ -4300,6 +4300,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: eaee38708a4743c1d004673f47274cd8b5e6077cd2fa71367137437e069c23cb
+hmac: 1e5c1bbfb1ac4071edb1060443f6be8a5d87b9f67038d7adaa724982ce2a2e62
 
 ...

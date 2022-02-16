@@ -119,7 +119,7 @@ def pr_pipelines(edition):
         'event': ['pull_request',],
         'paths': {
             'exclude': [
-                'docs/**',
+                'README.md',
             ],
         },
     }

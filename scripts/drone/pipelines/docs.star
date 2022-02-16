@@ -45,7 +45,7 @@ def docs_pipelines(edition):
             'pull_request',
         ],
         'paths': [
-            'docs/**',
+            'README.md',
         ],
     }
     return [
