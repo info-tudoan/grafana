@@ -10,8 +10,8 @@ import { setDataSourceSrv } from '@grafana/runtime';
 import { mockDataSource, MockDataSourceSrv } from '../alerting/unified/mocks';
 
 variableAdapters.setInit(() => [
-  (createQueryVariableAdapter() as unknown) as VariableAdapter<VariableModel>,
-  (createAdHocVariableAdapter() as unknown) as VariableAdapter<VariableModel>,
+  createQueryVariableAdapter() as unknown as VariableAdapter<VariableModel>,
+  createAdHocVariableAdapter() as unknown as VariableAdapter<VariableModel>,
 ]);
 
 describe('templateSrv', () => {
@@ -430,37 +430,37 @@ describe('templateSrv', () => {
     });
 
     it('should return true if $test exists', () => {
-      const result = _templateSrv.variableExists('$test');
+      const result = _templateSrv.containsTemplate('$test');
       expect(result).toBe(true);
     });
 
     it('should return true if $test exists in string', () => {
-      const result = _templateSrv.variableExists('something $test something');
+      const result = _templateSrv.containsTemplate('something $test something');
       expect(result).toBe(true);
     });
 
     it('should return true if [[test]] exists in string', () => {
-      const result = _templateSrv.variableExists('something [[test]] something');
+      const result = _templateSrv.containsTemplate('something [[test]] something');
       expect(result).toBe(true);
     });
 
     it('should return true if [[test:csv]] exists in string', () => {
-      const result = _templateSrv.variableExists('something [[test:csv]] something');
+      const result = _templateSrv.containsTemplate('something [[test:csv]] something');
       expect(result).toBe(true);
     });
 
     it('should return true if ${test} exists in string', () => {
-      const result = _templateSrv.variableExists('something ${test} something');
+      const result = _templateSrv.containsTemplate('something ${test} something');
       expect(result).toBe(true);
     });
 
     it('should return true if ${test:raw} exists in string', () => {
-      const result = _templateSrv.variableExists('something ${test:raw} something');
+      const result = _templateSrv.containsTemplate('something ${test:raw} something');
       expect(result).toBe(true);
     });
 
     it('should return null if there are no variables in string', () => {
-      const result = _templateSrv.variableExists('string without variables');
+      const result = _templateSrv.containsTemplate('string without variables');
       expect(result).toBe(false);
     });
   });
@@ -752,8 +752,18 @@ describe('templateSrv', () => {
       expect(target).toBe('var-single=value1');
     });
 
+    it('query variable with single value with queryparam format and scoped vars should return correct queryparam', () => {
+      const target = _templateSrv.replace(`\${single:queryparam}`, { single: { value: 'value1', text: 'value1' } });
+      expect(target).toBe('var-single=value1');
+    });
+
     it('query variable with single value and queryparam format should return correct queryparam', () => {
       const target = _templateSrv.replace('${single}', {}, 'queryparam');
+      expect(target).toBe('var-single=value1');
+    });
+
+    it('query variable with single value and queryparam format and scoped vars should return correct queryparam', () => {
+      const target = _templateSrv.replace('${single}', { single: { value: 'value1', text: 'value1' } }, 'queryparam');
       expect(target).toBe('var-single=value1');
     });
 
@@ -762,9 +772,19 @@ describe('templateSrv', () => {
       expect(target).toBe('var-multi=value1&var-multi=value2');
     });
 
+    it('query variable with multi value with queryparam format and scoped vars should return correct queryparam', () => {
+      const target = _templateSrv.replace(`\${multi:queryparam}`, { multi: { value: 'value2', text: 'value2' } });
+      expect(target).toBe('var-multi=value2');
+    });
+
     it('query variable with multi value and queryparam format should return correct queryparam', () => {
       const target = _templateSrv.replace('${multi}', {}, 'queryparam');
       expect(target).toBe('var-multi=value1&var-multi=value2');
+    });
+
+    it('query variable with multi value and queryparam format and scoped vars should return correct queryparam', () => {
+      const target = _templateSrv.replace('${multi}', { multi: { value: 'value2', text: 'value2' } }, 'queryparam');
+      expect(target).toBe('var-multi=value2');
     });
 
     it('query variable with adhoc value with queryparam format should return correct queryparam', () => {
@@ -772,9 +792,19 @@ describe('templateSrv', () => {
       expect(target).toBe('var-adhoc=alertstate%7C%3D%7Cfiring&var-adhoc=alertname%7C%3D%7CExampleAlertAlwaysFiring');
     });
 
-    it('query variable with multi value and queryparam format should return correct queryparam', () => {
+    it('query variable with adhoc value with queryparam format should return correct queryparam', () => {
+      const target = _templateSrv.replace(`\${adhoc:queryparam}`, { adhoc: { value: 'value2', text: 'value2' } });
+      expect(target).toBe('var-adhoc=value2');
+    });
+
+    it('query variable with adhoc value and queryparam format should return correct queryparam', () => {
       const target = _templateSrv.replace('${adhoc}', {}, 'queryparam');
       expect(target).toBe('var-adhoc=alertstate%7C%3D%7Cfiring&var-adhoc=alertname%7C%3D%7CExampleAlertAlwaysFiring');
+    });
+
+    it('query variable with adhoc value and queryparam format should return correct queryparam', () => {
+      const target = _templateSrv.replace('${adhoc}', { adhoc: { value: 'value2', text: 'value2' } }, 'queryparam');
+      expect(target).toBe('var-adhoc=value2');
     });
   });
 });

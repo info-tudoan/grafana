@@ -13,13 +13,13 @@ import { PromQueryEditorProps } from './types';
 
 const { Switch } = LegacyForms;
 
-const FORMAT_OPTIONS: Array<SelectableValue<string>> = [
+export const FORMAT_OPTIONS: Array<SelectableValue<string>> = [
   { label: 'Time series', value: 'time_series' },
   { label: 'Table', value: 'table' },
   { label: 'Heatmap', value: 'heatmap' },
 ];
 
-const INTERVAL_FACTOR_OPTIONS: Array<SelectableValue<number>> = map([1, 2, 3, 4, 5, 10], (value: number) => ({
+export const INTERVAL_FACTOR_OPTIONS: Array<SelectableValue<number>> = map([1, 2, 3, 4, 5, 10], (value: number) => ({
   value,
   label: '1/' + value,
 }));
@@ -161,6 +161,7 @@ export class PromQueryEditor extends PureComponent<PromQueryEditorProps, State> 
               <input
                 type="text"
                 className="gf-form-input width-8"
+                aria-label="Set lower limit for the step parameter"
                 placeholder={interval}
                 onChange={this.onIntervalChange}
                 onBlur={this.onRunQuery}
@@ -171,6 +172,7 @@ export class PromQueryEditor extends PureComponent<PromQueryEditorProps, State> 
             <div className="gf-form">
               <div className="gf-form-label">Resolution</div>
               <Select
+                aria-label="Select resolution"
                 menuShouldPortal
                 isSearchable={false}
                 options={INTERVAL_FACTOR_OPTIONS}
@@ -189,6 +191,7 @@ export class PromQueryEditor extends PureComponent<PromQueryEditorProps, State> 
                 options={FORMAT_OPTIONS}
                 onChange={this.onFormatChange}
                 value={formatOption}
+                aria-label="Select format"
               />
               <Switch label="Instant" checked={instant} onChange={this.onInstantChange} />
 

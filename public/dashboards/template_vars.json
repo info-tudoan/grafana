@@ -5,7 +5,7 @@
     "showcase",
     "templated"
   ],
-  "style": "light",
+  "style": "dark",
   "timezone": "browser",
   "editable": true,
   "hideControls": false,
