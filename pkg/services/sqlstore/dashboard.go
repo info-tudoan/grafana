@@ -7,7 +7,6 @@ import (
 
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/models"
-	"github.com/grafana/grafana/pkg/services/search"
 	"github.com/grafana/grafana/pkg/services/sqlstore/permissions"
 	"github.com/grafana/grafana/pkg/services/sqlstore/searchstore"
 	"github.com/grafana/grafana/pkg/util"
@@ -79,7 +78,35 @@ type DashboardSearchProjection struct {
 	SortMeta    int64
 }
 
-func (ss *SQLStore) FindDashboards(ctx context.Context, query *search.FindPersistedDashboardsQuery) ([]DashboardSearchProjection, error) {
+type FindPersistedDashboardsQuery struct {
+	Title        string
+	OrgId        int64
+	SignedInUser *models.SignedInUser
+	IsStarred    bool
+	DashboardIds []int64
+	Type         string
+	FolderIds    []int64
+	Tags         []string
+	Limit        int64
+	Page         int64
+	Permission   models.PermissionType
+	Sort         SortOption
+
+	Filters []interface{}
+
+	Result HitList
+}
+
+type SortOption struct {
+	Name        string
+	DisplayName string
+	Description string
+	Index       int
+	MetaName    string
+	Filter      []SortOptionFilter
+}
+
+func (ss *SQLStore) FindDashboards(ctx context.Context, query *FindPersistedDashboardsQuery) ([]DashboardSearchProjection, error) {
 	filters := []interface{}{
 		permissions.DashboardPermissionFilter{
 			OrgRole:         query.SignedInUser.OrgRole,
@@ -150,7 +177,7 @@ func (ss *SQLStore) FindDashboards(ctx context.Context, query *search.FindPersis
 	return res, nil
 }
 
-func (ss *SQLStore) SearchDashboards(ctx context.Context, query *search.FindPersistedDashboardsQuery) error {
+func (ss *SQLStore) SearchDashboards(ctx context.Context, query *FindPersistedDashboardsQuery) error {
 	res, err := ss.FindDashboards(ctx, query)
 	if err != nil {
 		return err
@@ -161,25 +188,25 @@ func (ss *SQLStore) SearchDashboards(ctx context.Context, query *search.FindPers
 	return nil
 }
 
-func getHitType(item DashboardSearchProjection) search.HitType {
-	var hitType search.HitType
+func getHitType(item DashboardSearchProjection) searchstore.HitType {
+	var hitType searchstore.HitType
 	if item.IsFolder {
-		hitType = search.DashHitFolder
+		hitType = searchstore.DashHitFolder
 	} else {
-		hitType = search.DashHitDB
+		hitType = searchstore.DashHitDB
 	}
 
 	return hitType
 }
 
-func makeQueryResult(query *search.FindPersistedDashboardsQuery, res []DashboardSearchProjection) {
-	query.Result = make([]*search.Hit, 0)
-	hits := make(map[int64]*search.Hit)
+func makeQueryResult(query *FindPersistedDashboardsQuery, res []DashboardSearchProjection) {
+	query.Result = make([]*searchstore.Hit, 0)
+	hits := make(map[int64]*searchstore.Hit)
 
 	for _, item := range res {
 		hit, exists := hits[item.ID]
 		if !exists {
-			hit = &search.Hit{
+			hit = &searchstore.Hit{
 				ID:          item.ID,
 				UID:         item.UID,
 				Title:       item.Title,
