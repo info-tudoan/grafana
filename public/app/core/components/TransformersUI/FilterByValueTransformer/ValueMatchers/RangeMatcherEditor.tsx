@@ -9,7 +9,7 @@ type PropNames = 'from' | 'to';
 export function rangeMatcherEditor<T = any>(
   config: ValueMatcherEditorConfig
 ): React.FC<ValueMatcherUIProps<RangeValueMatcherOptions<T>>> {
-  return function RangeMatcherEditor({ options, onChange, field }) {
+  return ({ options, onChange, field }) => {
     const { validator } = config;
     const [isInvalid, setInvalid] = useState({
       from: !validator(options.from),

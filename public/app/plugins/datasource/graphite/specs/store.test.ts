@@ -33,7 +33,7 @@ async function changeTarget(ctx: any, target: string): Promise<void> {
   await ctx.dispatch(actions.toggleEditorMode());
 }
 
-describe('Graphite actions', () => {
+describe('Graphite actions', async () => {
   const ctx = {
     datasource: {
       metricFindQuery: jest.fn(() => Promise.resolve([])),

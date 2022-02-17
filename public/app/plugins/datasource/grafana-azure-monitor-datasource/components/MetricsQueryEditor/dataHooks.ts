@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
-
+import { useState, useEffect, useMemo } from 'react';
 import Datasource from '../../datasource';
 import { AzureMonitorErrorish, AzureMonitorOption, AzureMonitorQuery } from '../../types';
 import { hasOption, toOption } from '../../utils/common';
-import { setMetricNamespace, setSubscriptionID } from './setQueryValue';
+import {
+  setMetricName,
+  setMetricNamespace,
+  setResourceGroup,
+  setResourceName,
+  setResourceType,
+  setSubscriptionID,
+} from './setQueryValue';
 
 export interface MetricMetadata {
   aggOptions: AzureMonitorOption[];
@@ -58,10 +64,7 @@ export const updateSubscriptions = (
   const { subscription } = query;
 
   // Return early if subscriptions havent loaded, or if the query already has a subscription
-  if (
-    !subscriptionOptions.length ||
-    (subscription && (hasOption(subscriptionOptions, subscription) || subscription.includes('$')))
-  ) {
+  if (!subscriptionOptions.length || (subscription && hasOption(subscriptionOptions, subscription))) {
     return;
   }
 
@@ -85,14 +88,11 @@ export const updateSubscriptions = (
 
 export const useSubscriptions: DataHook = (query, datasource, onChange, setError) => {
   const defaultSubscription = datasource.azureMonitorDatasource.defaultSubscriptionId;
-  const { subscription } = query;
 
   const subscriptionOptions = useAsyncState(
     async () => {
       const results = await datasource.azureMonitorDatasource.getSubscriptions();
-      const options = formatOptions(results, subscription);
-
-      return options;
+      return results.map((v) => ({ label: v.text, value: v.value, description: v.value }));
     },
     setError,
     []
@@ -116,7 +116,11 @@ export const useResourceGroups: DataHook = (query, datasource, onChange, setErro
       }
 
       const results = await datasource.getResourceGroups(subscription);
-      const options = formatOptions(results, resourceGroup);
+      const options = results.map(toOption);
+
+      if (isInvalidOption(resourceGroup, options, datasource.getVariables())) {
+        onChange(setResourceGroup(query, undefined));
+      }
 
       return options;
     },
@@ -136,7 +140,11 @@ export const useResourceTypes: DataHook = (query, datasource, onChange, setError
       }
 
       const results = await datasource.getMetricDefinitions(subscription, resourceGroup);
-      const options = formatOptions(results, metricDefinition);
+      const options = results.map(toOption);
+
+      if (isInvalidOption(metricDefinition, options, datasource.getVariables())) {
+        onChange(setResourceType(query, undefined));
+      }
 
       return options;
     },
@@ -156,7 +164,11 @@ export const useResourceNames: DataHook = (query, datasource, onChange, setError
       }
 
       const results = await datasource.getResourceNames(subscription, resourceGroup, metricDefinition);
-      const options = formatOptions(results, resourceName);
+      const options = results.map(toOption);
+
+      if (isInvalidOption(resourceName, options, datasource.getVariables())) {
+        onChange(setResourceName(query, undefined));
+      }
 
       return options;
     },
@@ -176,7 +188,7 @@ export const useMetricNamespaces: DataHook = (query, datasource, onChange, setEr
       }
 
       const results = await datasource.getMetricNamespaces(subscription, resourceGroup, metricDefinition, resourceName);
-      const options = formatOptions(results, metricNamespace);
+      const options = results.map(toOption);
 
       // Do some cleanup of the query state if need be
       if (!metricNamespace && options.length) {
@@ -210,7 +222,11 @@ export const useMetricNames: DataHook = (query, datasource, onChange, setError) 
         metricNamespace
       );
 
-      const options = formatOptions(results, metricName);
+      const options = results.map(toOption);
+
+      if (isInvalidOption(metricName, options, datasource.getVariables())) {
+        onChange(setMetricName(query, undefined));
+      }
 
       return options;
     },
@@ -261,7 +277,9 @@ export const useMetricMetadata = (query: AzureMonitorQuery, datasource: Datasour
 
   // Update the query state in response to the meta data changing
   useEffect(() => {
-    const newAggregation = aggregation || metricMetadata.primaryAggType;
+    const aggregationIsValid = aggregation && metricMetadata.supportedAggTypes.includes(aggregation);
+
+    const newAggregation = aggregationIsValid ? aggregation : metricMetadata.primaryAggType;
     const newTimeGrain = timeGrain || 'auto';
 
     if (newAggregation !== aggregation || newTimeGrain !== timeGrain) {
@@ -279,19 +297,6 @@ export const useMetricMetadata = (query: AzureMonitorQuery, datasource: Datasour
   return metricMetadata;
 };
 
-function formatOptions(
-  rawResults: Array<{
-    text: string;
-    value: string;
-  }>,
-  selectedValue?: string
-) {
-  const options = rawResults.map(toOption);
-
-  // account for custom values that might have been set in json file like ones crafted with a template variable (ex: "cloud-datasource-resource-$Environment")
-  if (selectedValue && !options.find((option) => option.value === selectedValue)) {
-    options.push({ label: selectedValue, value: selectedValue });
-  }
-
-  return options;
+function isInvalidOption(value: string | undefined, options: AzureMonitorOption[], templateVariables: string[]) {
+  return value && !templateVariables.includes(value) && !hasOption(options, value);
 }

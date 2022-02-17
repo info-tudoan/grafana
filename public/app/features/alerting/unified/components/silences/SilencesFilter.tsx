@@ -6,18 +6,15 @@ import { useQueryParams } from 'app/core/hooks/useQueryParams';
 import { getSilenceFiltersFromUrlParams } from '../../utils/misc';
 import { SilenceState } from 'app/plugins/datasource/alertmanager/types';
 import { parseMatchers } from '../../utils/alertmanager';
-import { debounce, uniqueId } from 'lodash';
-import { Stack } from '@grafana/experimental';
+import { debounce } from 'lodash';
 
 const stateOptions: SelectableValue[] = Object.entries(SilenceState).map(([key, value]) => ({
   label: key,
   value,
 }));
 
-const getQueryStringKey = () => uniqueId('query-string-');
-
 export const SilencesFilter = () => {
-  const [queryStringKey, setQueryStringKey] = useState(getQueryStringKey());
+  const [queryStringKey, setQueryStringKey] = useState(`queryString-${Math.random() * 100}`);
   const [queryParams, setQueryParams] = useQueryParams();
   const { queryString, silenceState } = getSilenceFiltersFromUrlParams(queryParams);
   const styles = useStyles2(getStyles);
@@ -36,7 +33,7 @@ export const SilencesFilter = () => {
       queryString: null,
       silenceState: null,
     });
-    setTimeout(() => setQueryStringKey(getQueryStringKey()));
+    setTimeout(() => setQueryStringKey(''));
   };
 
   const inputInvalid = queryString && queryString.length > 3 ? parseMatchers(queryString).length === 0 : false;
@@ -46,21 +43,19 @@ export const SilencesFilter = () => {
       <Field
         className={styles.rowChild}
         label={
-          <Label>
-            <Stack gap={0.5}>
-              <span>Search by matchers</span>
-              <Tooltip
-                content={
-                  <div>
-                    Filter silences by matchers using a comma separated list of matchers, ie:
-                    <pre>{`severity=critical, instance=~cluster-us-.+`}</pre>
-                  </div>
-                }
-              >
-                <Icon name="info-circle" size="sm" />
-              </Tooltip>
-            </Stack>
-          </Label>
+          <span className={styles.fieldLabel}>
+            <Tooltip
+              content={
+                <div>
+                  Filter silences by matchers using a comma separated list of matchers, ie:
+                  <pre>{`severity=critical, instance=~cluster-us-.+`}</pre>
+                </div>
+              }
+            >
+              <Icon name="info-circle" />
+            </Tooltip>{' '}
+            Search by matchers
+          </span>
         }
         invalid={inputInvalid}
         error={inputInvalid ? 'Query must use valid matcher syntax' : null}
@@ -75,9 +70,11 @@ export const SilencesFilter = () => {
           data-testid="search-query-input"
         />
       </Field>
-      <Field className={styles.rowChild} label="State">
+
+      <div className={styles.rowChild}>
+        <Label>State</Label>
         <RadioButtonGroup options={stateOptions} value={silenceState} onChange={handleSilenceStateChange} />
-      </Field>
+      </div>
       {(queryString || silenceState) && (
         <div className={styles.rowChild}>
           <Button variant="secondary" icon="times" onClick={clearFilters}>

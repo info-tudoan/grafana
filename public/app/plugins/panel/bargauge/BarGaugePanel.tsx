@@ -8,7 +8,6 @@ import {
   FieldConfig,
   DisplayProcessor,
   DisplayValue,
-  VizOrientation,
 } from '@grafana/data';
 import { BarGauge, DataLinksContextMenu, VizRepeater, VizRepeaterRenderValueProps } from '@grafana/ui';
 
@@ -29,7 +28,7 @@ export class BarGaugePanel extends PureComponent<PanelProps<BarGaugeOptions>> {
 
     let processor: DisplayProcessor | undefined = undefined;
     if (view && isNumber(colIndex)) {
-      processor = view.getFieldDisplayProcessor(colIndex);
+      processor = view!.getFieldDisplayProcessor(colIndex as number);
     }
 
     return (
@@ -53,19 +52,18 @@ export class BarGaugePanel extends PureComponent<PanelProps<BarGaugeOptions>> {
   };
 
   renderValue = (valueProps: VizRepeaterRenderValueProps<FieldDisplay, DisplayValueAlignmentFactors>): JSX.Element => {
-    const { value, orientation } = valueProps;
+    const { value } = valueProps;
     const { hasLinks, getLinks } = value;
 
     if (hasLinks && getLinks) {
       return (
-        <div style={{ width: '100%', display: orientation === VizOrientation.Vertical ? 'flex' : 'initial' }}>
-          <DataLinksContextMenu links={getLinks} config={value.field}>
-            {(api) => this.renderComponent(valueProps, api)}
-          </DataLinksContextMenu>
-        </div>
+        <DataLinksContextMenu links={getLinks} config={value.field}>
+          {(api) => {
+            return this.renderComponent(valueProps, api);
+          }}
+        </DataLinksContextMenu>
       );
     }
-
     return this.renderComponent(valueProps, {});
   };
 

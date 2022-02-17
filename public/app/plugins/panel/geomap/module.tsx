@@ -5,19 +5,14 @@ import { MapViewEditor } from './editor/MapViewEditor';
 import { defaultView, GeomapPanelOptions } from './types';
 import { mapPanelChangedHandler, mapMigrationHandler } from './migrations';
 import { getLayerEditor } from './editor/layerEditor';
-import { LayersEditor } from './editor/LayersEditor';
+import { LayersEditor } from './editor/LayersEditor/LayersEditor';
 import { config } from '@grafana/runtime';
-import { commonOptionsBuilder } from '@grafana/ui';
 
 export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
   .setNoPadding()
   .setPanelChangeHandler(mapPanelChangedHandler)
   .setMigrationHandler(mapMigrationHandler)
-  .useFieldConfig({
-    useCustomConfig: (builder) => {
-      commonOptionsBuilder.addHideFrom(builder);
-    },
-  })
+  .useFieldConfig()
   .setPanelOptions((builder, context) => {
     let category = ['Map view'];
     builder.addCustomEditor({
@@ -25,7 +20,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
       id: 'view',
       path: 'view',
       name: 'Initial view', // don't show it
-      description: 'This location will show when the panel first loads.',
+      description: 'This location will show when the panel first loads',
       editor: MapViewEditor,
       defaultValue: defaultView,
     });
@@ -88,14 +83,13 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
       .addBooleanSwitch({
         category,
         path: 'controls.showZoom',
-        description: 'Show zoom control buttons in the upper left corner',
+        description: 'show buttons in the upper left',
         name: 'Show zoom control',
         defaultValue: true,
       })
       .addBooleanSwitch({
         category,
         path: 'controls.mouseWheelZoom',
-        description: 'Enable zoom control via mouse wheel',
         name: 'Mouse wheel zoom',
         defaultValue: true,
       })
@@ -117,7 +111,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         category,
         path: 'controls.showDebug',
         name: 'Show debug',
-        description: 'Show map info',
+        description: 'show map info',
         defaultValue: false,
       });
   });

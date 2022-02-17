@@ -240,7 +240,7 @@ export function RichHistoryQueriesTab(props: Props) {
                 return (
                   <RichHistoryCard
                     query={q}
-                    key={q.id}
+                    key={q.ts}
                     exploreId={exploreId}
                     dsImg={listOfDatasources[idx].imgUrl}
                     isRemoved={listOfDatasources[idx].isRemoved}

@@ -32,7 +32,7 @@ export const getAlertTableStyles = (theme: GrafanaTheme2) => ({
     white-space: nowrap;
 
     & > * + * {
-      margin-left: ${theme.spacing(0.5)};
+      margin-left: ${theme.spacing(1)};
     }
   `,
 });

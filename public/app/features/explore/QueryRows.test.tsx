@@ -50,7 +50,7 @@ function setup(queries: DataQuery[]) {
     syncedTimes: false,
     right: undefined,
     richHistory: [],
-    richHistoryStorageFull: false,
+    localStorageFull: false,
     richHistoryLimitExceededWarningShown: false,
   };
   const store = configureStore({ explore: initialState, user: { orgId: 1 } as UserState });

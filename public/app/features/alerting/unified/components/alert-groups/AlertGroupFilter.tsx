@@ -44,7 +44,7 @@ export const AlertGroupFilter = ({ groups }: Props) => {
         <MatcherFilter
           className={styles.filterInput}
           key={matcherFilterKey}
-          defaultQueryString={queryString}
+          queryString={queryString}
           onFilterChange={(value) => setQueryParams({ queryString: value ? value : null })}
         />
         <GroupBy

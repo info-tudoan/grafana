@@ -13,7 +13,7 @@ interface Props {
   navModel: NavModel;
 }
 
-export function UpgradePage({ navModel }: Props) {
+export const UpgradePage: React.FC<Props> = ({ navModel }) => {
   return (
     <Page navModel={navModel}>
       <Page.Contents>
@@ -25,7 +25,7 @@ export function UpgradePage({ navModel }: Props) {
       </Page.Contents>
     </Page>
   );
-}
+};
 
 const titleStyles = { fontWeight: 500, fontSize: '26px', lineHeight: '123%' };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { FC, useState, useEffect } from 'react';
 import Page from 'app/core/components/Page/Page';
 import { useSelector } from 'react-redux';
 import { StoreState, OrgUser, AccessControlAction } from 'app/types';
@@ -37,7 +37,7 @@ const removeOrgUser = async (orgUser: OrgUser, orgId: UrlQueryValue) => {
 
 interface Props extends GrafanaRouteComponentProps<{ id: string }> {}
 
-export default function AdminEditOrgPage({ match }: Props) {
+export const AdminEditOrgPage: FC<Props> = ({ match }) => {
   const navIndex = useSelector((state: StoreState) => state.navIndex);
   const navModel = getNavModel(navIndex, 'global-orgs');
   const orgId = parseInt(match.params.id, 10);
@@ -123,4 +123,6 @@ export default function AdminEditOrgPage({ match }: Props) {
       </Page.Contents>
     </Page>
   );
-}
+};
+
+export default AdminEditOrgPage;

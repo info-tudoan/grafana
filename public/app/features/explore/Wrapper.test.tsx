@@ -12,7 +12,6 @@ import {
   FieldType,
   QueryEditorProps,
   ScopedVars,
-  serializeStateToUrlParam,
 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 
@@ -67,23 +66,13 @@ describe('Wrapper', () => {
     // At this point url should be initialised to some defaults
     expect(locationService.getSearchObject()).toEqual({
       orgId: '1',
-      left: serializeStateToUrlParam({
-        datasource: 'loki',
-        queries: [{ refId: 'A' }],
-        range: { from: 'now-1h', to: 'now' },
-      }),
+      left: JSON.stringify(['now-1h', 'now', 'loki', { refId: 'A' }]),
     });
     expect(datasources.loki.query).not.toBeCalled();
   });
 
   it('runs query when url contains query and renders results', async () => {
-    const query = {
-      left: serializeStateToUrlParam({
-        datasource: 'loki',
-        queries: [{ refId: 'A', expr: '{ label="value"}' }],
-        range: { from: 'now-1h', to: 'now' },
-      }),
-    };
+    const query = { left: JSON.stringify(['now-1h', 'now', 'loki', { expr: '{ label="value"}', refId: 'A' }]) };
     const { datasources, store } = setup({ query });
     (datasources.loki.query as Mock).mockReturnValueOnce(makeLogsQueryResponse());
 
@@ -103,6 +92,7 @@ describe('Wrapper', () => {
     });
 
     expect(store.getState().explore.richHistory[0]).toMatchObject({
+      datasourceId: '1',
       datasourceName: 'loki',
       queries: [{ expr: '{ label="value"}', refId: 'A' }],
     });
@@ -165,11 +155,7 @@ describe('Wrapper', () => {
     expect(datasources.elastic.query).not.toBeCalled();
     expect(locationService.getSearchObject()).toEqual({
       orgId: '1',
-      left: serializeStateToUrlParam({
-        datasource: 'elastic',
-        queries: [{ refId: 'A' }],
-        range: { from: 'now-1h', to: 'now' },
-      }),
+      left: JSON.stringify(['now-1h', 'now', 'elastic', { refId: 'A' }]),
     });
   });
 
@@ -186,16 +172,8 @@ describe('Wrapper', () => {
 
   it('inits with two panes if specified in url', async () => {
     const query = {
-      left: serializeStateToUrlParam({
-        datasource: 'loki',
-        queries: [{ refId: 'A', expr: '{ label="value"}' }],
-        range: { from: 'now-1h', to: 'now' },
-      }),
-      right: serializeStateToUrlParam({
-        datasource: 'elastic',
-        queries: [{ refId: 'A', expr: 'error' }],
-        range: { from: 'now-1h', to: 'now' },
-      }),
+      left: JSON.stringify(['now-1h', 'now', 'loki', { expr: '{ label="value"}', refId: 'A' }]),
+      right: JSON.stringify(['now-1h', 'now', 'elastic', { expr: 'error', refId: 'A' }]),
     };
 
     const { datasources } = setup({ query });
@@ -279,7 +257,9 @@ describe('Wrapper', () => {
     // to work
     await screen.findByText(`loki Editor input: { label="value"}`);
 
-    store.dispatch(splitOpen<any>({ datasourceUid: 'elastic', query: { expr: 'error' } }) as any);
+    store.dispatch(
+      splitOpen<any>({ datasourceUid: 'elastic', query: { expr: 'error' } }) as any
+    );
 
     // Editor renders the new query
     await screen.findByText(`elastic Editor input: error`);
@@ -310,15 +290,10 @@ describe('Wrapper', () => {
     // to work
     await screen.findByText(`loki Editor input: { label="value"}`);
 
-    store.dispatch(splitOpen<any>({ datasourceUid: 'elastic', query: { expr: 'error' } }) as any);
+    store.dispatch(
+      splitOpen<any>({ datasourceUid: 'elastic', query: { expr: 'error' } }) as any
+    );
     await waitFor(() => expect(document.title).toEqual('Explore - loki | elastic - Grafana'));
-  });
-
-  it('removes `from` and `to` parameters from url when first mounted', () => {
-    setup({ searchParams: 'from=1&to=2&orgId=1' });
-
-    expect(locationService.getSearchObject()).toEqual(expect.not.objectContaining({ from: '1', to: '2' }));
-    expect(locationService.getSearchObject()).toEqual(expect.objectContaining({ orgId: '1' }));
   });
 });
 
@@ -326,7 +301,6 @@ type DatasourceSetup = { settings: DataSourceInstanceSettings; api: DataSourceAp
 type SetupOptions = {
   datasources?: DatasourceSetup[];
   query?: any;
-  searchParams?: string;
 };
 
 function setup(options?: SetupOptions): { datasources: { [name: string]: DataSourceApi }; store: EnhancedStore } {
@@ -375,7 +349,7 @@ function setup(options?: SetupOptions): { datasources: { [name: string]: DataSou
     },
   };
 
-  locationService.push({ pathname: '/explore', search: options?.searchParams });
+  locationService.push({ pathname: '/explore' });
 
   if (options?.query) {
     locationService.partial(options.query);

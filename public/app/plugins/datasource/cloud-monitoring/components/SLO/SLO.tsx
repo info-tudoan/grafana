@@ -1,21 +1,19 @@
-import { SelectableValue } from '@grafana/data';
-import { Select } from '@grafana/ui';
 import React, { useEffect, useState } from 'react';
-
+import { Select } from '@grafana/ui';
+import { SelectableValue } from '@grafana/data';
 import { QueryEditorRow } from '..';
-import { SELECT_WIDTH } from '../../constants';
 import CloudMonitoringDatasource from '../../datasource';
 import { SLOQuery } from '../../types';
+import { SELECT_WIDTH } from '../../constants';
 
 export interface Props {
-  refId: string;
   onChange: (query: SLOQuery) => void;
   query: SLOQuery;
   templateVariableOptions: Array<SelectableValue<string>>;
   datasource: CloudMonitoringDatasource;
 }
 
-export const SLO: React.FC<Props> = ({ refId, query, templateVariableOptions, onChange, datasource }) => {
+export const SLO: React.FC<Props> = ({ query, templateVariableOptions, onChange, datasource }) => {
   const [slos, setSLOs] = useState<Array<SelectableValue<string>>>([]);
   const { projectName, serviceId } = query;
 
@@ -36,10 +34,9 @@ export const SLO: React.FC<Props> = ({ refId, query, templateVariableOptions, on
   }, [datasource, projectName, serviceId, templateVariableOptions]);
 
   return (
-    <QueryEditorRow label="SLO" htmlFor={`${refId}-slo`}>
+    <QueryEditorRow label="SLO">
       <Select
         menuShouldPortal
-        inputId={`${refId}-slo`}
         width={SELECT_WIDTH}
         allowCustomValue
         value={query?.sloId && { value: query?.sloId, label: query?.sloName || query?.sloId }}

@@ -7,11 +7,7 @@ import {
   DataQueryRequest,
   DataQueryResponse,
   DataSourceApi,
-  DataSourceWithQueryExportSupport,
   dateMath,
-  AbstractQuery,
-  AbstractLabelOperator,
-  AbstractLabelMatcher,
   MetricFindValue,
   QueryResultMetaStat,
   ScopedVars,
@@ -25,7 +21,6 @@ import { getTemplateSrv, TemplateSrv } from 'app/features/templating/template_sr
 // Types
 import {
   GraphiteLokiMapping,
-  GraphiteMetricLokiMatcher,
   GraphiteOptions,
   GraphiteQuery,
   GraphiteQueryImportConfiguration,
@@ -36,30 +31,12 @@ import { getRollupNotice, getRuntimeConsolidationNotice } from 'app/plugins/data
 import { getSearchFilterScopedVar } from '../../../features/variables/utils';
 import { DEFAULT_GRAPHITE_VERSION } from './versions';
 import { reduceError } from './utils';
-import { default as GraphiteQueryModel } from './graphite_query';
 
-const GRAPHITE_TAG_COMPARATORS = {
-  '=': AbstractLabelOperator.Equal,
-  '!=': AbstractLabelOperator.NotEqual,
-  '=~': AbstractLabelOperator.EqualRegEx,
-  '!=~': AbstractLabelOperator.NotEqualRegEx,
-};
-
-/**
- * Converts Graphite glob-like pattern to a regular expression
- */
-function convertGlobToRegEx(text: string): string {
-  if (text.includes('*') || text.includes('{')) {
-    return '^' + text.replace(/\*/g, '.*').replace(/\{/g, '(').replace(/}/g, ')').replace(/,/g, '|');
-  } else {
-    return text;
-  }
-}
-
-export class GraphiteDatasource
-  extends DataSourceApi<GraphiteQuery, GraphiteOptions, GraphiteQueryImportConfiguration>
-  implements DataSourceWithQueryExportSupport<GraphiteQuery>
-{
+export class GraphiteDatasource extends DataSourceApi<
+  GraphiteQuery,
+  GraphiteOptions,
+  GraphiteQueryImportConfiguration
+> {
   basicAuth: string;
   url: string;
   name: string;
@@ -111,67 +88,6 @@ export class GraphiteDatasource
       loki: {
         mappings: this.metricMappings,
       },
-    };
-  }
-
-  async exportToAbstractQueries(queries: GraphiteQuery[]): Promise<AbstractQuery[]> {
-    return queries.map((query) => this.exportToAbstractQuery(query));
-  }
-
-  exportToAbstractQuery(query: GraphiteQuery): AbstractQuery {
-    const graphiteQuery: GraphiteQueryModel = new GraphiteQueryModel(
-      this,
-      {
-        ...query,
-        target: query.target || '',
-        textEditor: false,
-      },
-      getTemplateSrv()
-    );
-    graphiteQuery.parseTarget();
-
-    let labels: AbstractLabelMatcher[] = [];
-    const config = this.getImportQueryConfiguration().loki;
-
-    if (graphiteQuery.seriesByTagUsed) {
-      graphiteQuery.tags.forEach((tag) => {
-        labels.push({
-          name: tag.key,
-          operator: GRAPHITE_TAG_COMPARATORS[tag.operator],
-          value: tag.value,
-        });
-      });
-    } else {
-      const targetNodes = graphiteQuery.segments.map((segment) => segment.value);
-      let mappings = config.mappings.filter((mapping) => mapping.matchers.length <= targetNodes.length);
-
-      for (let mapping of mappings) {
-        const matchers = mapping.matchers.concat();
-
-        matchers.every((matcher: GraphiteMetricLokiMatcher, index: number) => {
-          if (matcher.labelName) {
-            let value = (targetNodes[index] as string)!;
-
-            if (value === '*') {
-              return true;
-            }
-
-            const converted = convertGlobToRegEx(value);
-            labels.push({
-              name: matcher.labelName,
-              operator: converted !== value ? AbstractLabelOperator.EqualRegEx : AbstractLabelOperator.Equal,
-              value: converted,
-            });
-            return true;
-          }
-          return targetNodes[index] === matcher.value || matcher.value === '*';
-        });
-      }
-    }
-
-    return {
-      refId: query.refId,
-      labelMatchers: labels,
     };
   }
 
@@ -328,12 +244,12 @@ export class GraphiteDatasource
     // Graphite metric as annotation
     if (options.annotation.target) {
       const target = this.templateSrv.replace(options.annotation.target, {}, 'glob');
-      const graphiteQuery = {
+      const graphiteQuery = ({
         range: options.range,
         targets: [{ target: target }],
         format: 'json',
         maxDataPoints: 100,
-      } as unknown as DataQueryRequest<GraphiteQuery>;
+      } as unknown) as DataQueryRequest<GraphiteQuery>;
 
       return lastValueFrom(
         this.query(graphiteQuery).pipe(
@@ -417,7 +333,7 @@ export class GraphiteDatasource
   }
 
   targetContainsTemplate(target: GraphiteQuery) {
-    return this.templateSrv.containsTemplate(target.target ?? '');
+    return this.templateSrv.variableExists(target.target ?? '');
   }
 
   translateTime(date: any, roundUp: any, timezone: any) {
@@ -781,7 +697,7 @@ export class GraphiteDatasource
   }
 
   testDatasource() {
-    const query = {
+    const query = ({
       panelId: 3,
       rangeRaw: { from: 'now-1h', to: 'now' },
       range: {
@@ -789,7 +705,7 @@ export class GraphiteDatasource
       },
       targets: [{ target: 'constantLine(100)' }],
       maxDataPoints: 300,
-    } as unknown as DataQueryRequest<GraphiteQuery>;
+    } as unknown) as DataQueryRequest<GraphiteQuery>;
 
     return lastValueFrom(this.query(query)).then(() => ({ status: 'success', message: 'Data source is working' }));
   }

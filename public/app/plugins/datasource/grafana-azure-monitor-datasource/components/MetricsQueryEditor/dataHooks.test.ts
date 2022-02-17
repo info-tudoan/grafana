@@ -1,8 +1,5 @@
 import { renderHook } from '@testing-library/react-hooks';
 
-import createMockDatasource from '../../__mocks__/datasource';
-import Datasource from '../../datasource';
-import { AzureMetricQuery, AzureMonitorOption, AzureMonitorQuery, AzureQueryType } from '../../types';
 import {
   DataHook,
   updateSubscriptions,
@@ -12,8 +9,11 @@ import {
   useResourceGroups,
   useResourceNames,
   useResourceTypes,
-  useSubscriptions,
 } from './dataHooks';
+import { AzureMetricQuery, AzureMonitorOption, AzureQueryType } from '../../types';
+import createMockDatasource from '../../__mocks__/datasource';
+import { MockedObjectDeep } from 'ts-jest/dist/utils/testing';
+import Datasource from '../../datasource';
 
 interface WaitableMock extends jest.Mock<any, any> {
   waitToBeCalled(): Promise<unknown>;
@@ -88,12 +88,13 @@ interface TestScenario {
   name: string;
   hook: DataHook;
 
-  // For convenience, only need to define the azureMonitor part of the query for some tests
+  // For conviencence, only need to define the azureMonitor part of the query
   emptyQueryPartial: AzureMetricQuery;
-  customProperties: AzureMetricQuery;
-  topLevelCustomProperties?: Partial<AzureMonitorQuery>;
+  validQueryPartial: AzureMetricQuery;
+  invalidQueryPartial: AzureMetricQuery;
+  templateVariableQueryPartial: AzureMetricQuery;
 
-  expectedCustomPropertyResults?: Array<AzureMonitorOption<string>>;
+  expectedClearedQueryPartial?: AzureMetricQuery;
   expectedOptions: AzureMonitorOption[];
 }
 
@@ -106,37 +107,17 @@ describe('AzureMonitor: metrics dataHooks', () => {
 
   const testTable: TestScenario[] = [
     {
-      name: 'useSubscriptions',
-      hook: useSubscriptions,
-      emptyQueryPartial: {},
-      topLevelCustomProperties: {
-        subscription: 'subscription-$ENVIRONMENT',
-      },
-      customProperties: {},
-      expectedOptions: [
-        {
-          label: 'sub-abc-123',
-          value: 'sub-abc-123',
-        },
-      ],
-      expectedCustomPropertyResults: [
-        {
-          label: 'sub-abc-123',
-          value: 'sub-abc-123',
-        },
-        {
-          label: 'subscription-$ENVIRONMENT',
-          value: 'subscription-$ENVIRONMENT',
-        },
-      ],
-    },
-
-    {
       name: 'useResourceGroups',
       hook: useResourceGroups,
       emptyQueryPartial: {},
-      customProperties: {
-        resourceGroup: 'resource-group-$ENVIRONMENT',
+      validQueryPartial: {
+        resourceGroup: 'web-app-development',
+      },
+      invalidQueryPartial: {
+        resourceGroup: 'wrong-resource-group`',
+      },
+      templateVariableQueryPartial: {
+        resourceGroup: '$rg',
       },
       expectedOptions: [
         {
@@ -148,11 +129,9 @@ describe('AzureMonitor: metrics dataHooks', () => {
           value: 'web-app-development',
         },
       ],
-      expectedCustomPropertyResults: [
-        { label: 'Web App - Production', value: 'web-app-production' },
-        { label: 'Web App - Development', value: 'web-app-development' },
-        { label: 'resource-group-$ENVIRONMENT', value: 'resource-group-$ENVIRONMENT' },
-      ],
+      expectedClearedQueryPartial: {
+        resourceGroup: undefined,
+      },
     },
 
     {
@@ -161,9 +140,17 @@ describe('AzureMonitor: metrics dataHooks', () => {
       emptyQueryPartial: {
         resourceGroup: 'web-app-development',
       },
-      customProperties: {
+      validQueryPartial: {
         resourceGroup: 'web-app-development',
-        metricDefinition: 'azure/resource-type-$ENVIRONMENT',
+        metricDefinition: 'azure/vm',
+      },
+      invalidQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/invalid-resource-type',
+      },
+      templateVariableQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: '$rt',
       },
       expectedOptions: [
         {
@@ -175,12 +162,12 @@ describe('AzureMonitor: metrics dataHooks', () => {
           value: 'azure/db',
         },
       ],
-      expectedCustomPropertyResults: [
-        { label: 'Virtual Machine', value: 'azure/vm' },
-        { label: 'Database', value: 'azure/db' },
-        { label: 'azure/resource-type-$ENVIRONMENT', value: 'azure/resource-type-$ENVIRONMENT' },
-      ],
+      expectedClearedQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: undefined,
+      },
     },
+
     {
       name: 'useResourceNames',
       hook: useResourceNames,
@@ -188,10 +175,20 @@ describe('AzureMonitor: metrics dataHooks', () => {
         resourceGroup: 'web-app-development',
         metricDefinition: 'azure/vm',
       },
-      customProperties: {
+      validQueryPartial: {
         resourceGroup: 'web-app-development',
         metricDefinition: 'azure/vm',
-        resourceName: 'resource-name-$ENVIRONMENT',
+        resourceName: 'web-server',
+      },
+      invalidQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/vm',
+        resourceName: 'resource-that-doesnt-exist',
+      },
+      templateVariableQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/vm',
+        resourceName: '$variable',
       },
       expectedOptions: [
         {
@@ -203,11 +200,11 @@ describe('AzureMonitor: metrics dataHooks', () => {
           value: 'job-server',
         },
       ],
-      expectedCustomPropertyResults: [
-        { label: 'Web server', value: 'web-server' },
-        { label: 'Job server', value: 'job-server' },
-        { label: 'resource-name-$ENVIRONMENT', value: 'resource-name-$ENVIRONMENT' },
-      ],
+      expectedClearedQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/vm',
+        resourceName: undefined,
+      },
     },
 
     {
@@ -219,12 +216,25 @@ describe('AzureMonitor: metrics dataHooks', () => {
         resourceName: 'web-server',
         metricNamespace: 'azure/vm',
       },
-      customProperties: {
+      validQueryPartial: {
         resourceGroup: 'web-app-development',
         metricDefinition: 'azure/vm',
         resourceName: 'web-server',
         metricNamespace: 'azure/vm',
-        metricName: 'metric-$ENVIRONMENT',
+      },
+      invalidQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/vm',
+        resourceName: 'web-server',
+        metricNamespace: 'azure/vm',
+        metricName: 'invalid-metric',
+      },
+      templateVariableQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/vm',
+        resourceName: 'web-server',
+        metricNamespace: 'azure/vm',
+        metricName: '$variable',
       },
       expectedOptions: [
         {
@@ -236,11 +246,13 @@ describe('AzureMonitor: metrics dataHooks', () => {
           value: 'free-memory',
         },
       ],
-      expectedCustomPropertyResults: [
-        { label: 'Percentage CPU', value: 'percentage-cpu' },
-        { label: 'Free memory', value: 'free-memory' },
-        { label: 'metric-$ENVIRONMENT', value: 'metric-$ENVIRONMENT' },
-      ],
+      expectedClearedQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/vm',
+        resourceName: 'web-server',
+        metricNamespace: 'azure/vm',
+        metricName: undefined,
+      },
     },
 
     {
@@ -252,12 +264,25 @@ describe('AzureMonitor: metrics dataHooks', () => {
         resourceName: 'web-server',
         metricNamespace: 'azure/vm',
       },
-      customProperties: {
+      validQueryPartial: {
         resourceGroup: 'web-app-development',
         metricDefinition: 'azure/vm',
         resourceName: 'web-server',
-        metricNamespace: 'azure/vm-$ENVIRONMENT',
-        metricName: 'metric-name',
+        metricNamespace: 'azure/vm',
+      },
+      invalidQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/vm',
+        resourceName: 'web-server',
+        metricNamespace: 'azure/vm',
+        metricName: 'invalid-metric',
+      },
+      templateVariableQueryPartial: {
+        resourceGroup: 'web-app-development',
+        metricDefinition: 'azure/vm',
+        resourceName: 'web-server',
+        metricNamespace: 'azure/vm',
+        metricName: '$variable',
       },
       expectedOptions: [
         {
@@ -268,20 +293,11 @@ describe('AzureMonitor: metrics dataHooks', () => {
           label: 'Database NS',
           value: 'azure/dbns',
         },
-        {
-          label: 'azure/vm',
-          value: 'azure/vm',
-        },
-      ],
-      expectedCustomPropertyResults: [
-        { label: 'Compute Virtual Machine', value: 'azure/vmc' },
-        { label: 'Database NS', value: 'azure/dbns' },
-        { label: 'azure/vm-$ENVIRONMENT', value: 'azure/vm-$ENVIRONMENT' },
       ],
     },
   ];
 
-  let datasource: Datasource;
+  let datasource: MockedObjectDeep<Datasource>;
   let onChange: jest.Mock<any, any>;
   let setError: jest.Mock<any, any>;
 
@@ -291,10 +307,6 @@ describe('AzureMonitor: metrics dataHooks', () => {
 
     datasource = createMockDatasource();
     datasource.getVariables = jest.fn().mockReturnValue(['$sub', '$rg', '$rt', '$variable']);
-
-    datasource.azureMonitorDatasource.getSubscriptions = jest
-      .fn()
-      .mockResolvedValue([opt('sub-abc-123', 'sub-abc-123')]);
 
     datasource.getResourceGroups = jest
       .fn()
@@ -331,16 +343,59 @@ describe('AzureMonitor: metrics dataHooks', () => {
       expect(result.current).toEqual(scenario.expectedOptions);
     });
 
-    it('adds custom properties as a valid option', async () => {
+    it('does not call onChange when the property has not been set', async () => {
       const query = {
         ...bareQuery,
-        azureMonitor: scenario.customProperties,
-        ...scenario.topLevelCustomProperties,
+        azureMonitor: scenario.emptyQueryPartial,
       };
-      const { result, waitForNextUpdate } = renderHook(() => scenario.hook(query, datasource, onChange, setError));
+      const { waitForNextUpdate } = renderHook(() => scenario.hook(query, datasource, onChange, setError));
       await waitForNextUpdate(WAIT_OPTIONS);
 
-      expect(result.current).toEqual(scenario.expectedCustomPropertyResults);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('does not clear the property when it is a valid option', async () => {
+      const query = {
+        ...bareQuery,
+        azureMonitor: scenario.validQueryPartial,
+      };
+      const { waitForNextUpdate } = renderHook(() => scenario.hook(query, datasource, onChange, setError));
+      await waitForNextUpdate(WAIT_OPTIONS);
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('does not clear the property when it is a template variable', async () => {
+      const query = {
+        ...bareQuery,
+        azureMonitor: scenario.templateVariableQueryPartial,
+      };
+      const { waitForNextUpdate } = renderHook(() => scenario.hook(query, datasource, onChange, setError));
+      await waitForNextUpdate(WAIT_OPTIONS);
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('clears the property when it is not a valid option', async () => {
+      const query = {
+        ...bareQuery,
+        azureMonitor: scenario.invalidQueryPartial,
+      };
+      const { waitForNextUpdate } = renderHook(() => scenario.hook(query, datasource, onChange, setError));
+      await waitForNextUpdate(WAIT_OPTIONS);
+
+      if (scenario.expectedClearedQueryPartial) {
+        expect(onChange).toHaveBeenCalledWith({
+          ...query,
+          azureMonitor: {
+            ...scenario.expectedClearedQueryPartial,
+            dimensionFilters: [],
+            timeGrain: '',
+          },
+        });
+      } else {
+        expect(onChange).not.toHaveBeenCalled();
+      }
     });
   });
 });
@@ -361,11 +416,6 @@ describe('AzureMonitor: updateSubscriptions', () => {
       description: 'should not update with the subscription as an option',
       query: { ...bareQuery, subscription: 'foo' },
       subscriptionOptions: [{ label: 'foo', value: 'foo' }],
-    },
-    {
-      description: 'should not update with a template variable',
-      query: { ...bareQuery, subscription: '$foo' },
-      subscriptionOptions: [],
     },
     {
       description: 'should update with the first subscription',

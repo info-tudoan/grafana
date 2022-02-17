@@ -102,7 +102,7 @@ export enum GrafanaAlertStateDecision {
   Error = 'Error',
 }
 
-export interface AlertDataQuery extends DataQuery {
+interface AlertDataQuery extends DataQuery {
   maxDataPoints?: number;
   intervalMs?: number;
 }
@@ -124,7 +124,6 @@ export interface PostableGrafanaRuleDefinition {
   data: AlertQuery[];
 }
 export interface GrafanaRuleDefinition extends PostableGrafanaRuleDefinition {
-  id?: string;
   uid: string;
   namespace_uid: string;
   namespace_id: number;

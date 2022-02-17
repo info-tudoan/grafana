@@ -9,11 +9,8 @@ import {
   DataQueryRequest,
   DataQueryResponse,
   DataSourceInstanceSettings,
-  DataSourceWithQueryExportSupport,
-  DataSourceWithQueryImportSupport,
   dateMath,
   DateTime,
-  AbstractQuery,
   LoadingState,
   rangeUtil,
   ScopedVars,
@@ -38,7 +35,7 @@ import addLabelToQuery from './add_label_to_query';
 import PrometheusLanguageProvider from './language_provider';
 import { expandRecordingRules } from './language_utils';
 import { getInitHints, getQueryHints } from './query_hints';
-import { getOriginalMetricName, transform, transformV2 } from './result_transformer';
+import { getOriginalMetricName, renderTemplate, transform, transformV2 } from './result_transformer';
 import {
   ExemplarTraceIdDestination,
   PromDataErrorResponse,
@@ -54,15 +51,11 @@ import {
 } from './types';
 import { PrometheusVariableSupport } from './variables';
 import PrometheusMetricFindQuery from './metric_find_query';
-import { renderLegendFormat } from './legend';
 
 export const ANNOTATION_QUERY_STEP_DEFAULT = '60s';
 const GET_AND_POST_METADATA_ENDPOINTS = ['api/v1/query', 'api/v1/query_range', 'api/v1/series', 'api/v1/labels'];
 
-export class PrometheusDatasource
-  extends DataSourceWithBackend<PromQuery, PromOptions>
-  implements DataSourceWithQueryImportSupport<PromQuery>, DataSourceWithQueryExportSupport<PromQuery>
-{
+export class PrometheusDatasource extends DataSourceWithBackend<PromQuery, PromOptions> {
   type: string;
   editorSrc: string;
   ruleMappings: { [index: string]: string };
@@ -85,8 +78,7 @@ export class PrometheusDatasource
   constructor(
     instanceSettings: DataSourceInstanceSettings<PromOptions>,
     private readonly templateSrv: TemplateSrv = getTemplateSrv(),
-    private readonly timeSrv: TimeSrv = getTimeSrv(),
-    languageProvider?: PrometheusLanguageProvider
+    private readonly timeSrv: TimeSrv = getTimeSrv()
   ) {
     super(instanceSettings);
 
@@ -105,7 +97,7 @@ export class PrometheusDatasource
     this.directUrl = instanceSettings.jsonData.directUrl ?? this.url;
     this.exemplarTraceIdDestinations = instanceSettings.jsonData.exemplarTraceIdDestinations;
     this.ruleMappings = {};
-    this.languageProvider = languageProvider ?? new PrometheusLanguageProvider(this);
+    this.languageProvider = new PrometheusLanguageProvider(this);
     this.lookupsDisabled = instanceSettings.jsonData.disableMetricsLookup ?? false;
     this.customQueryParameters = new URLSearchParams(instanceSettings.jsonData.customQueryParameters);
     this.variables = new PrometheusVariableSupport(this, this.templateSrv, this.timeSrv);
@@ -178,20 +170,14 @@ export class PrometheusDatasource
     return getBackendSrv().fetch<T>(options);
   }
 
-  async importFromAbstractQueries(abstractQueries: AbstractQuery[]): Promise<PromQuery[]> {
-    return abstractQueries.map((abstractQuery) => this.languageProvider.importFromAbstractQuery(abstractQuery));
-  }
-
-  async exportToAbstractQueries(queries: PromQuery[]): Promise<AbstractQuery[]> {
-    return queries.map((query) => this.languageProvider.exportToAbstractQuery(query));
-  }
-
   // Use this for tab completion features, wont publish response to other components
   async metadataRequest<T = any>(url: string, params = {}) {
     // If URL includes endpoint that supports POST and GET method, try to use configured method. This might fail as POST is supported only in v2.10+.
     if (GET_AND_POST_METADATA_ENDPOINTS.some((endpoint) => url.includes(endpoint))) {
       try {
-        return await lastValueFrom(this._request<T>(url, params, { method: this.httpMethod, hideFromInspector: true }));
+        return await lastValueFrom(
+          this._request<T>(url, params, { method: this.httpMethod, hideFromInspector: true })
+        );
       } catch (err) {
         // If status code of error is Method Not Allowed (405) and HTTP method is POST, retry with GET
         if (this.httpMethod === 'POST' && err.status === 405) {
@@ -202,7 +188,9 @@ export class PrometheusDatasource
       }
     }
 
-    return await lastValueFrom(this._request<T>(url, params, { method: 'GET', hideFromInspector: true })); // toPromise until we change getTagValues, getTagKeys to Observable
+    return await lastValueFrom(
+      this._request<T>(url, params, { method: 'GET', hideFromInspector: true })
+    ); // toPromise until we change getTagValues, getTagKeys to Observable
   }
 
   interpolateQueryExpr(value: string | string[] = [], variable: any) {
@@ -225,7 +213,7 @@ export class PrometheusDatasource
   }
 
   targetContainsTemplate(target: PromQuery) {
-    return this.templateSrv.containsTemplate(target.expr);
+    return this.templateSrv.variableExists(target.expr);
   }
 
   prepareTargets = (options: DataQueryRequest<PromQuery>, start: number, end: number) => {
@@ -312,19 +300,21 @@ export class PrometheusDatasource
     };
   };
 
-  shouldRunExemplarQuery(target: PromQuery, request: DataQueryRequest<PromQuery>): boolean {
+  shouldRunExemplarQuery(target: PromQuery): boolean {
+    /* We want to run exemplar query only for histogram metrics:
+    1. If we haven't processd histogram metrics yet, we need to check if expr includes "_bucket" which means that it is probably histogram metric (can rarely lead to false positive).
+    2. If we have processed histogram metrics, check if it is part of query expr.
+    */
     if (target.exemplar) {
-      // We check all already processed targets and only create exemplar target for not used metric names
-      const metricName = this.languageProvider.histogramMetrics.find((m) => target.expr.includes(m));
-      // Remove targets that weren't processed yet (in targets array they are after current target)
-      const currentTargetIdx = request.targets.findIndex((t) => t.refId === target.refId);
-      const targets = request.targets.slice(0, currentTargetIdx);
+      const histogramMetrics = this.languageProvider.histogramMetrics;
 
-      if (!metricName || (metricName && !targets.some((t) => t.expr.includes(metricName)))) {
-        return true;
+      if (histogramMetrics.length > 0) {
+        return !!histogramMetrics.find((metric) => target.expr.includes(metric));
+      } else {
+        return target.expr.includes('_bucket');
       }
-      return false;
     }
+
     return false;
   }
 
@@ -332,7 +322,7 @@ export class PrometheusDatasource
     const processedTarget = {
       ...target,
       queryType: PromQueryType.timeSeriesQuery,
-      exemplar: this.shouldRunExemplarQuery(target, request),
+      exemplar: this.shouldRunExemplarQuery(target),
       requestId: request.panelId + target.refId,
       // We need to pass utcOffsetSec to backend to calculate aligned range
       utcOffsetSec: this.timeSrv.timeRange().to.utcOffset() * 60,
@@ -686,19 +676,19 @@ export class PrometheusDatasource
           data: {
             from: (this.getPrometheusTime(options.range.from, false) * 1000).toString(),
             to: (this.getPrometheusTime(options.range.to, true) * 1000).toString(),
-            queries: [this.applyTemplateVariables(queryModel, {})],
+            queries: [queryModel],
           },
           requestId: `prom-query-${annotation.name}`,
         })
         .pipe(
           map((rsp: FetchResponse<BackendDataSourceResponse>) => {
-            return this.processAnnotationResponse(options, rsp.data);
+            return this.processsAnnotationResponse(options, rsp.data);
           })
         )
     );
   }
 
-  processAnnotationResponse = (options: any, data: BackendDataSourceResponse) => {
+  processsAnnotationResponse = (options: any, data: BackendDataSourceResponse) => {
     const frames: DataFrame[] = toDataQueryResponse({ data: data }).data;
     if (!frames || !frames.length) {
       return [];
@@ -709,74 +699,71 @@ export class PrometheusDatasource
 
     const step = rangeUtil.intervalToSeconds(annotation.step || ANNOTATION_QUERY_STEP_DEFAULT) * 1000;
     const tagKeysArray = tagKeys.split(',');
+    const frame = frames[0];
+    const timeField = frame.fields[0];
+    const valueField = frame.fields[1];
+    const labels = valueField?.labels || {};
 
-    const eventList: AnnotationEvent[] = [];
+    const tags = Object.keys(labels)
+      .filter((label) => tagKeysArray.includes(label))
+      .map((label) => labels[label]);
 
-    for (const frame of frames) {
-      const timeField = frame.fields[0];
-      const valueField = frame.fields[1];
-      const labels = valueField?.labels || {};
+    const timeValueTuple: Array<[number, number]> = [];
 
-      const tags = Object.keys(labels)
-        .filter((label) => tagKeysArray.includes(label))
-        .map((label) => labels[label]);
+    let idx = 0;
+    valueField.values.toArray().forEach((value: string) => {
+      let timeStampValue: number;
+      let valueValue: number;
+      const time = timeField.values.get(idx);
 
-      const timeValueTuple: Array<[number, number]> = [];
-
-      let idx = 0;
-      valueField.values.toArray().forEach((value: string) => {
-        let timeStampValue: number;
-        let valueValue: number;
-        const time = timeField.values.get(idx);
-
-        // If we want to use value as a time, we use value as timeStampValue and valueValue will be 1
-        if (options.annotation.useValueForTime) {
-          timeStampValue = Math.floor(parseFloat(value));
-          valueValue = 1;
-        } else {
-          timeStampValue = Math.floor(parseFloat(time));
-          valueValue = parseFloat(value);
-        }
-
-        idx++;
-        timeValueTuple.push([timeStampValue, valueValue]);
-      });
-
-      const activeValues = timeValueTuple.filter((value) => value[1] >= 1);
-      const activeValuesTimestamps = activeValues.map((value) => value[0]);
-
-      // Instead of creating singular annotation for each active event we group events into region if they are less
-      // or equal to `step` apart.
-      let latestEvent: AnnotationEvent | null = null;
-
-      for (const timestamp of activeValuesTimestamps) {
-        // We already have event `open` and we have new event that is inside the `step` so we just update the end.
-        if (latestEvent && (latestEvent.timeEnd ?? 0) + step >= timestamp) {
-          latestEvent.timeEnd = timestamp;
-          continue;
-        }
-
-        // Event exists but new one is outside of the `step` so we add it to eventList.
-        if (latestEvent) {
-          eventList.push(latestEvent);
-        }
-
-        // We start a new region.
-        latestEvent = {
-          time: timestamp,
-          timeEnd: timestamp,
-          annotation,
-          title: renderLegendFormat(titleFormat, labels),
-          tags,
-          text: renderLegendFormat(textFormat, labels),
-        };
+      // If we want to use value as a time, we use value as timeStampValue and valueValue will be 1
+      if (options.annotation.useValueForTime) {
+        timeStampValue = Math.floor(parseFloat(value));
+        valueValue = 1;
+      } else {
+        timeStampValue = Math.floor(parseFloat(time));
+        valueValue = parseFloat(value);
       }
 
+      idx++;
+      timeValueTuple.push([timeStampValue, valueValue]);
+    });
+
+    const activeValues = timeValueTuple.filter((value) => value[1] >= 1);
+    const activeValuesTimestamps = activeValues.map((value) => value[0]);
+
+    // Instead of creating singular annotation for each active event we group events into region if they are less
+    // or equal to `step` apart.
+    const eventList: AnnotationEvent[] = [];
+    let latestEvent: AnnotationEvent | null = null;
+
+    for (const timestamp of activeValuesTimestamps) {
+      // We already have event `open` and we have new event that is inside the `step` so we just update the end.
+      if (latestEvent && (latestEvent.timeEnd ?? 0) + step >= timestamp) {
+        latestEvent.timeEnd = timestamp;
+        continue;
+      }
+
+      // Event exists but new one is outside of the `step` so we add it to eventList.
       if (latestEvent) {
-        // Finish up last point if we have one
-        latestEvent.timeEnd = activeValuesTimestamps[activeValuesTimestamps.length - 1];
         eventList.push(latestEvent);
       }
+
+      // We start a new region.
+      latestEvent = {
+        time: timestamp,
+        timeEnd: timestamp,
+        annotation,
+        title: renderTemplate(titleFormat, labels),
+        tags,
+        text: renderTemplate(textFormat, labels),
+      };
+    }
+
+    if (latestEvent) {
+      // Finish up last point if we have one
+      latestEvent.timeEnd = activeValuesTimestamps[activeValuesTimestamps.length - 1];
+      eventList.push(latestEvent);
     }
 
     return eventList;
@@ -791,19 +778,9 @@ export class PrometheusDatasource
     );
   }
 
-  async getTagKeys(options?: any) {
-    if (options?.series) {
-      // Get tags for the provided series only
-      const seriesLabels: Array<Record<string, string[]>> = await Promise.all(
-        options.series.map((series: string) => this.languageProvider.fetchSeriesLabels(series))
-      );
-      const uniqueLabels = [...new Set(...seriesLabels.map((value) => Object.keys(value)))];
-      return uniqueLabels.map((value: any) => ({ text: value }));
-    } else {
-      // Get all tags
-      const result = await this.metadataRequest('/api/v1/labels');
-      return result?.data?.data?.map((value: any) => ({ text: value })) ?? [];
-    }
+  async getTagKeys() {
+    const result = await this.metadataRequest('/api/v1/labels');
+    return result?.data?.data?.map((value: any) => ({ text: value })) ?? [];
   }
 
   async getTagValues(options: { key?: string } = {}) {
@@ -904,11 +881,11 @@ export class PrometheusDatasource
         break;
       }
       case 'ADD_HISTOGRAM_QUANTILE': {
-        expression = `histogram_quantile(0.95, sum(rate(${expression}[$__rate_interval])) by (le))`;
+        expression = `histogram_quantile(0.95, sum(rate(${expression}[5m])) by (le))`;
         break;
       }
       case 'ADD_RATE': {
-        expression = `rate(${expression}[$__rate_interval])`;
+        expression = `rate(${expression}[5m])`;
         break;
       }
       case 'ADD_SUM': {
@@ -984,16 +961,7 @@ export class PrometheusDatasource
       ...target,
       legendFormat: this.templateSrv.replace(target.legendFormat, variables),
       expr: this.templateSrv.replace(expr, variables, this.interpolateQueryExpr),
-      interval: this.templateSrv.replace(target.interval, variables),
     };
-  }
-
-  getVariables(): string[] {
-    return this.templateSrv.getVariables().map((v) => `$${v.name}`);
-  }
-
-  interpolateString(string: string) {
-    return this.templateSrv.replace(string, undefined, this.interpolateQueryExpr);
   }
 }
 

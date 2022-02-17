@@ -1,9 +1,7 @@
 import React from 'react';
 import { PanelProps } from '@grafana/data';
-import memoizeOne from 'memoize-one';
 import { Options } from './types';
 import { NodeGraph } from './NodeGraph';
-import { getNodeGraphDataFrames } from './utils';
 import { useLinks } from '../../../features/explore/utils/links';
 
 export const NodeGraphPanel: React.FunctionComponent<PanelProps<Options>> = ({ width, height, data }) => {
@@ -16,10 +14,9 @@ export const NodeGraphPanel: React.FunctionComponent<PanelProps<Options>> = ({ w
     );
   }
 
-  const memoizedGetNodeGraphDataFrames = memoizeOne(getNodeGraphDataFrames);
   return (
     <div style={{ width, height }}>
-      <NodeGraph dataFrames={memoizedGetNodeGraphDataFrames(data.series)} getLinks={getLinks} />
+      <NodeGraph dataFrames={data.series} getLinks={getLinks} />
     </div>
   );
 };

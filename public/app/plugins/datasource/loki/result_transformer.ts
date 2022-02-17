@@ -17,7 +17,6 @@ import {
   QueryResultMeta,
   TimeSeriesValue,
   ScopedVars,
-  toDataFrame,
 } from '@grafana/data';
 
 import { getTemplateSrv, getDataSourceSrv } from '@grafana/runtime';
@@ -38,7 +37,6 @@ import {
   LokiStreamResponse,
   LokiStats,
 } from './types';
-import { renderLegendFormat } from '../prometheus/legend';
 
 const UUID_NAMESPACE = '6ec946da-0f49-47a8-983a-1d76d17e7c92';
 
@@ -185,37 +183,40 @@ function lokiMatrixToTimeSeries(matrixResult: LokiMatrixResult, options: Transfo
   return {
     target: name,
     title: name,
-    datapoints: lokiPointsToTimeseriesPoints(matrixResult.values),
+    datapoints: lokiPointsToTimeseriesPoints(matrixResult.values, options),
     tags: matrixResult.metric,
     meta: options.meta,
     refId: options.refId,
   };
 }
 
-function parsePrometheusFormatSampleValue(value: string): number {
-  switch (value) {
-    case '+Inf':
-      return Number.POSITIVE_INFINITY;
-    case '-Inf':
-      return Number.NEGATIVE_INFINITY;
-    default:
-      return parseFloat(value);
-  }
-}
-
-export function lokiPointsToTimeseriesPoints(data: Array<[number, string]>): TimeSeriesValue[][] {
+export function lokiPointsToTimeseriesPoints(
+  data: Array<[number, string]>,
+  options: TransformerOptions
+): TimeSeriesValue[][] {
+  const stepMs = options.step * 1000;
   const datapoints: TimeSeriesValue[][] = [];
 
+  let baseTimestampMs = options.start / 1e6;
   for (const [time, value] of data) {
-    let datapointValue: TimeSeriesValue = parsePrometheusFormatSampleValue(value);
+    let datapointValue: TimeSeriesValue = parseFloat(value);
 
     if (isNaN(datapointValue)) {
       datapointValue = null;
     }
 
     const timestamp = time * 1000;
+    for (let t = baseTimestampMs; t < timestamp; t += stepMs) {
+      datapoints.push([null, t]);
+    }
 
+    baseTimestampMs = timestamp + stepMs;
     datapoints.push([datapointValue, timestamp]);
+  }
+
+  const endTimestamp = options.end / 1e6;
+  for (let t = baseTimestampMs; t <= endTimestamp; t += stepMs) {
+    datapoints.push([null, t]);
   }
 
   return datapoints;
@@ -281,12 +282,17 @@ export function createMetricLabel(labelData: { [key: string]: string }, options?
   let label =
     options === undefined || isEmpty(options.legendFormat)
       ? getOriginalMetricName(labelData)
-      : renderLegendFormat(getTemplateSrv().replace(options.legendFormat ?? '', options.scopedVars), labelData);
+      : renderTemplate(getTemplateSrv().replace(options.legendFormat ?? '', options.scopedVars), labelData);
 
   if (!label && options) {
     label = options.query;
   }
   return label;
+}
+
+function renderTemplate(aliasPattern: string, aliasData: { [key: string]: string }) {
+  const aliasRegex = /\{\{\s*(.+?)\s*\}\}/g;
+  return aliasPattern.replace(aliasRegex, (_, g1) => (aliasData[g1] ? aliasData[g1] : g1));
 }
 
 function getOriginalMetricName(labelData: { [key: string]: string }) {
@@ -452,7 +458,7 @@ function fieldFromDerivedFieldConfig(derivedFieldConfigs: DerivedFieldConfig[]):
   };
 }
 
-function rangeQueryResponseToTimeSeries(
+export function rangeQueryResponseToTimeSeries(
   response: LokiResponse,
   query: LokiRangeQueryRequest,
   target: LokiQuery,
@@ -489,33 +495,6 @@ function rangeQueryResponseToTimeSeries(
   }
 }
 
-export function rangeQueryResponseToDataFrames(
-  response: LokiResponse,
-  query: LokiRangeQueryRequest,
-  target: LokiQuery,
-  responseListLength: number,
-  scopedVars: ScopedVars
-): DataFrame[] {
-  const series = rangeQueryResponseToTimeSeries(response, query, target, responseListLength, scopedVars);
-  const frames = series.map((s) => toDataFrame(s));
-
-  const { step } = query;
-
-  if (step != null) {
-    const intervalMs = step * 1000;
-
-    frames.forEach((frame) => {
-      frame.fields.forEach((field) => {
-        if (field.type === FieldType.time) {
-          field.config.interval = intervalMs;
-        }
-      });
-    });
-  }
-
-  return frames;
-}
-
 export function processRangeQueryResponse(
   response: LokiResponse,
   target: LokiQuery,
@@ -536,7 +515,7 @@ export function processRangeQueryResponse(
     case LokiResultType.Vector:
     case LokiResultType.Matrix:
       return of({
-        data: rangeQueryResponseToDataFrames(
+        data: rangeQueryResponseToTimeSeries(
           response,
           query,
           {

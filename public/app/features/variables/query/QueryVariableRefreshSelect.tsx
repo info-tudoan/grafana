@@ -24,7 +24,7 @@ export function QueryVariableRefreshSelect({ onChange, refresh }: PropsWithChild
       options={REFRESH_OPTIONS}
       onChange={onChange}
       labelWidth={10}
-      testId={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRefreshSelectV2}
+      ariaLabel={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRefreshSelect}
       tooltip="When to update the values of this variable."
     />
   );

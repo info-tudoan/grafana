@@ -1,31 +1,20 @@
 import { getBackendSrv } from '@grafana/runtime';
 
-import { AccessControlAction, TeamMember, ThunkResult } from 'app/types';
+import { TeamMember, ThunkResult } from 'app/types';
 import { updateNavIndex } from 'app/core/actions';
 import { buildNavModel } from './navModel';
 import { teamGroupsLoaded, teamLoaded, teamMembersLoaded, teamsLoaded } from './reducers';
-import { accessControlQueryParam } from 'app/core/utils/accessControl';
-import { contextSrv } from 'app/core/core';
 
 export function loadTeams(): ThunkResult<void> {
   return async (dispatch) => {
-    // Early return if the user cannot list teams
-    if (!contextSrv.hasPermission(AccessControlAction.ActionTeamsRead)) {
-      dispatch(teamsLoaded([]));
-      return;
-    }
-
-    const response = await getBackendSrv().get(
-      '/api/teams/search',
-      accessControlQueryParam({ perpage: 1000, page: 1 })
-    );
+    const response = await getBackendSrv().get('/api/teams/search', { perpage: 1000, page: 1 });
     dispatch(teamsLoaded(response.teams));
   };
 }
 
 export function loadTeam(id: number): ThunkResult<void> {
   return async (dispatch) => {
-    const response = await getBackendSrv().get(`/api/teams/${id}`, accessControlQueryParam());
+    const response = await getBackendSrv().get(`/api/teams/${id}`);
     dispatch(teamLoaded(response));
     dispatch(updateNavIndex(buildNavModel(response)));
   };
@@ -90,8 +79,6 @@ export function removeTeamGroup(groupId: string): ThunkResult<void> {
 export function deleteTeam(id: number): ThunkResult<void> {
   return async (dispatch) => {
     await getBackendSrv().delete(`/api/teams/${id}`);
-    // Update users permissions in case they lost teams.read with the deletion
-    await contextSrv.fetchUserPermissions();
     dispatch(loadTeams());
   };
 }

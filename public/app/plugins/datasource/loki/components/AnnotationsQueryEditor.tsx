@@ -34,6 +34,7 @@ export const LokiAnnotationsQueryEditor = memo(function LokiAnnotationQueryEdito
         history={[]}
         ExtraFieldElement={
           <LokiOptionFields
+            queryType={queryWithRefId.instant ? 'instant' : 'range'}
             lineLimitValue={queryWithRefId?.maxLines?.toString() || ''}
             resolution={queryWithRefId.resolution || 1}
             query={queryWithRefId}

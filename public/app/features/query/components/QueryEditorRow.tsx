@@ -51,7 +51,6 @@ interface Props<TQuery extends DataQuery> {
   app?: CoreApp;
   history?: Array<HistoryItem<TQuery>>;
   eventBus?: EventBusExtended;
-  alerting?: boolean;
 }
 
 interface State<TQuery extends DataQuery> {
@@ -137,7 +136,7 @@ export class QueryEditorRow<TQuery extends DataQuery> extends PureComponent<Prop
     }
 
     this.setState({
-      datasource: datasource as unknown as DataSourceApi<TQuery>,
+      datasource: (datasource as unknown) as DataSourceApi<TQuery>,
       loadedDataSourceIdentifier: dataSourceIdentifier,
       hasTextEditMode: has(datasource, 'components.QueryCtrl.prototype.toggleEditorMode'),
     });
@@ -362,7 +361,7 @@ export class QueryEditorRow<TQuery extends DataQuery> extends PureComponent<Prop
   };
 
   renderHeader = (props: QueryOperationRowRenderProps) => {
-    const { alerting, query, dataSource, onChangeDataSource, onChange, queries, renderHeaderExtras } = this.props;
+    const { query, dataSource, onChangeDataSource, onChange, queries, renderHeaderExtras } = this.props;
 
     return (
       <QueryEditorRowHeader
@@ -375,7 +374,6 @@ export class QueryEditorRow<TQuery extends DataQuery> extends PureComponent<Prop
         onChange={onChange}
         collapsedText={!props.isOpen ? this.renderCollapsedText() : null}
         renderExtras={renderHeaderExtras}
-        alerting={alerting}
       />
     );
   };
@@ -476,12 +474,10 @@ export function filterPanelDataToQuery(data: PanelData, refId: string): PanelDat
   }
 
   // Only say this is an error if the error links to the query
-  let state = data.state;
+  let state = LoadingState.Done;
   const error = data.error && data.error.refId === refId ? data.error : undefined;
   if (error) {
     state = LoadingState.Error;
-  } else if (!error && data.state === LoadingState.Error) {
-    state = LoadingState.Done;
   }
 
   const timeRange = data.timeRange;

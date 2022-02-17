@@ -6,6 +6,7 @@ import { Router } from 'react-router-dom';
 import { fetchAlertGroups } from './api/alertmanager';
 import { byRole, byTestId, byText } from 'testing-library-selector';
 import { configureStore } from 'app/store/configureStore';
+import { typeAsJestMock } from 'test/helpers/typeAsJestMock';
 import AlertGroups from './AlertGroups';
 import { mockAlertGroup, mockAlertmanagerAlert, mockDataSource, MockDataSourceSrv } from './mocks';
 import { DataSourceType } from './utils/datasource';
@@ -15,7 +16,7 @@ jest.mock('./api/alertmanager');
 
 const mocks = {
   api: {
-    fetchAlertGroups: jest.mocked(fetchAlertGroups),
+    fetchAlertGroups: typeAsJestMock(fetchAlertGroups),
   },
 };
 
@@ -48,7 +49,7 @@ const ui = {
   sourceButton: byText('See source'),
   matcherInput: byTestId('search-query-input'),
   groupByContainer: byTestId('group-by-container'),
-  groupByInput: byRole('combobox', { name: /group by label keys/i }),
+  groupByInput: byRole('textbox', { name: /group by label keys/i }),
   clearButton: byRole('button', { name: 'Clear filters' }),
 };
 

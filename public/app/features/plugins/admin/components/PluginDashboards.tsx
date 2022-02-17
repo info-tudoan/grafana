@@ -87,7 +87,7 @@ export class PluginDashboards extends PureComponent<Props, State> {
 
   remove = (dash: PluginDashboard) => {
     getBackendSrv()
-      .delete('/api/dashboards/uid/' + dash.uid)
+      .delete('/api/dashboards/' + dash.importedUri)
       .then(() => {
         dash.imported = false;
         this.setState({ dashboards: [...this.state.dashboards] });

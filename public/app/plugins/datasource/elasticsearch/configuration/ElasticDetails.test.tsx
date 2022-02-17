@@ -1,89 +1,92 @@
 import React from 'react';
+import { last } from 'lodash';
+import { mount } from 'enzyme';
 import { ElasticDetails } from './ElasticDetails';
 import { createDefaultConfigOptions } from './mocks';
-import { render, screen } from '@testing-library/react';
-import selectEvent from 'react-select-event';
+import { LegacyForms } from '@grafana/ui';
+const { Select } = LegacyForms;
 
 describe('ElasticDetails', () => {
-  describe('Max concurrent Shard Requests', () => {
-    it('should render "Max concurrent Shard Requests" if version >= 5.6.0', () => {
-      render(<ElasticDetails onChange={() => {}} value={createDefaultConfigOptions({ esVersion: '5.6.0' })} />);
-      expect(screen.getByLabelText('Max concurrent Shard Requests')).toBeInTheDocument();
-    });
-
-    it('should not render "Max concurrent Shard Requests" if version < 5.6.0', () => {
-      render(<ElasticDetails onChange={() => {}} value={createDefaultConfigOptions({ esVersion: '5.0.0' })} />);
-      expect(screen.queryByLabelText('Max concurrent Shard Requests')).not.toBeInTheDocument();
-    });
+  it('should render without error', () => {
+    mount(<ElasticDetails onChange={() => {}} value={createDefaultConfigOptions()} />);
   });
 
-  it('should change database on interval change when not set explicitly', async () => {
+  it('should render "Max concurrent Shard Requests" if version high enough', () => {
+    const wrapper = mount(<ElasticDetails onChange={() => {}} value={createDefaultConfigOptions()} />);
+    expect(wrapper.find('input[aria-label="Max concurrent Shard Requests input"]').length).toBe(1);
+  });
+
+  it('should not render "Max concurrent Shard Requests" if version is low', () => {
+    const options = createDefaultConfigOptions();
+    options.jsonData.esVersion = '5.0.0';
+    const wrapper = mount(<ElasticDetails onChange={() => {}} value={options} />);
+    expect(wrapper.find('input[aria-label="Max concurrent Shard Requests input"]').length).toBe(0);
+  });
+
+  it('should change database on interval change when not set explicitly', () => {
     const onChangeMock = jest.fn();
-    render(<ElasticDetails onChange={onChangeMock} value={createDefaultConfigOptions()} />);
-    const selectEl = screen.getByLabelText('Pattern');
+    const wrapper = mount(<ElasticDetails onChange={onChangeMock} value={createDefaultConfigOptions()} />);
+    const selectEl = wrapper.find({ label: 'Pattern' }).find(Select);
+    selectEl.props().onChange({ value: 'Daily', label: 'Daily' }, { action: 'select-option', option: undefined });
 
-    await selectEvent.select(selectEl, 'Daily', { container: document.body });
-
-    expect(onChangeMock).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        database: '[logstash-]YYYY.MM.DD',
-        jsonData: expect.objectContaining({ interval: 'Daily' }),
-      })
-    );
+    expect(onChangeMock.mock.calls[0][0].jsonData.interval).toBe('Daily');
+    expect(onChangeMock.mock.calls[0][0].database).toBe('[logstash-]YYYY.MM.DD');
   });
 
-  it('should change database on interval change if pattern is from example', async () => {
+  it('should change database on interval change if pattern is from example', () => {
     const onChangeMock = jest.fn();
     const options = createDefaultConfigOptions();
     options.database = '[logstash-]YYYY.MM.DD.HH';
-    render(<ElasticDetails onChange={onChangeMock} value={options} />);
-    const selectEl = screen.getByLabelText('Pattern');
+    const wrapper = mount(<ElasticDetails onChange={onChangeMock} value={options} />);
 
-    await selectEvent.select(selectEl, 'Monthly', { container: document.body });
+    const selectEl = wrapper.find({ label: 'Pattern' }).find(Select);
+    selectEl.props().onChange({ value: 'Monthly', label: 'Monthly' }, { action: 'select-option', option: undefined });
 
-    expect(onChangeMock).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        database: '[logstash-]YYYY.MM',
-        jsonData: expect.objectContaining({ interval: 'Monthly' }),
-      })
-    );
+    expect(onChangeMock.mock.calls[0][0].jsonData.interval).toBe('Monthly');
+    expect(onChangeMock.mock.calls[0][0].database).toBe('[logstash-]YYYY.MM');
   });
 
   describe('version change', () => {
     const testCases = [
-      { version: '5.x', expectedMaxConcurrentShardRequests: 256 },
-      { version: '5.x', maxConcurrentShardRequests: 50, expectedMaxConcurrentShardRequests: 50 },
-      { version: '5.6+', expectedMaxConcurrentShardRequests: 256 },
-      { version: '5.6+', maxConcurrentShardRequests: 256, expectedMaxConcurrentShardRequests: 256 },
-      { version: '5.6+', maxConcurrentShardRequests: 5, expectedMaxConcurrentShardRequests: 256 },
-      { version: '5.6+', maxConcurrentShardRequests: 200, expectedMaxConcurrentShardRequests: 200 },
-      { version: '7.0+', expectedMaxConcurrentShardRequests: 5 },
-      { version: '7.0+', maxConcurrentShardRequests: 256, expectedMaxConcurrentShardRequests: 5 },
-      { version: '7.0+', maxConcurrentShardRequests: 5, expectedMaxConcurrentShardRequests: 5 },
-      { version: '7.0+', maxConcurrentShardRequests: 6, expectedMaxConcurrentShardRequests: 6 },
+      { version: '5.0.0', expectedMaxConcurrentShardRequests: 256 },
+      { version: '5.0.0', maxConcurrentShardRequests: 50, expectedMaxConcurrentShardRequests: 50 },
+      { version: '5.6.0', expectedMaxConcurrentShardRequests: 256 },
+      { version: '5.6.0', maxConcurrentShardRequests: 256, expectedMaxConcurrentShardRequests: 256 },
+      { version: '5.6.0', maxConcurrentShardRequests: 5, expectedMaxConcurrentShardRequests: 256 },
+      { version: '5.6.0', maxConcurrentShardRequests: 200, expectedMaxConcurrentShardRequests: 200 },
+      { version: '7.0.0', expectedMaxConcurrentShardRequests: 5 },
+      { version: '7.0.0', maxConcurrentShardRequests: 256, expectedMaxConcurrentShardRequests: 5 },
+      { version: '7.0.0', maxConcurrentShardRequests: 5, expectedMaxConcurrentShardRequests: 5 },
+      { version: '7.0.0', maxConcurrentShardRequests: 6, expectedMaxConcurrentShardRequests: 6 },
     ];
 
+    const onChangeMock = jest.fn();
+    const options = createDefaultConfigOptions();
+    const wrapper = mount(<ElasticDetails onChange={onChangeMock} value={options} />);
+
     testCases.forEach((tc) => {
-      const onChangeMock = jest.fn();
-      it(`sets maxConcurrentShardRequests=${tc.expectedMaxConcurrentShardRequests} if version=${tc.version},`, async () => {
-        render(
-          <ElasticDetails
-            onChange={onChangeMock}
-            value={createDefaultConfigOptions({
+      it(`sets maxConcurrentShardRequests = ${tc.maxConcurrentShardRequests} if version = ${tc.version},`, () => {
+        wrapper.setProps({
+          onChange: onChangeMock,
+          value: {
+            ...options,
+            jsonData: {
+              ...options.jsonData,
               maxConcurrentShardRequests: tc.maxConcurrentShardRequests,
-              esVersion: '2.0.0',
-            })}
-          />
-        );
+            },
+          },
+        });
 
-        const selectEl = screen.getByLabelText('ElasticSearch version');
+        const selectEl = wrapper.find({ label: 'Version' }).find(Select);
+        selectEl
+          .props()
+          .onChange(
+            { value: tc.version, label: tc.version.toString() },
+            { action: 'select-option', option: undefined }
+          );
 
-        await selectEvent.select(selectEl, tc.version, { container: document.body });
-
-        expect(onChangeMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            jsonData: expect.objectContaining({ maxConcurrentShardRequests: tc.expectedMaxConcurrentShardRequests }),
-          })
+        expect(last(onChangeMock.mock.calls)[0].jsonData.maxConcurrentShardRequests).toBe(
+          tc.expectedMaxConcurrentShardRequests
         );
       });
     });

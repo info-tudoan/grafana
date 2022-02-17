@@ -1,20 +1,18 @@
+import React, { useEffect, useMemo, useState } from 'react';
 import { SelectableValue } from '@grafana/data';
 import { Select } from '@grafana/ui';
-import React, { useEffect, useMemo, useState } from 'react';
-
-import { QueryEditorRow } from '.';
-import { SELECT_WIDTH } from '../constants';
 import CloudMonitoringDatasource from '../datasource';
+import { SELECT_WIDTH } from '../constants';
+import { QueryEditorRow } from '.';
 
 export interface Props {
-  refId: string;
   datasource: CloudMonitoringDatasource;
   onChange: (projectName: string) => void;
   templateVariableOptions: Array<SelectableValue<string>>;
   projectName: string;
 }
 
-export function Project({ refId, projectName, datasource, onChange, templateVariableOptions }: Props) {
+export function Project({ projectName, datasource, onChange, templateVariableOptions }: Props) {
   const [projects, setProjects] = useState<Array<SelectableValue<string>>>([]);
   useEffect(() => {
     datasource.getProjects().then((projects) => setProjects(projects));
@@ -33,7 +31,7 @@ export function Project({ refId, projectName, datasource, onChange, templateVari
   );
 
   return (
-    <QueryEditorRow label="Project" htmlFor={`${refId}-project`}>
+    <QueryEditorRow label="Project">
       <Select
         menuShouldPortal
         width={SELECT_WIDTH}
@@ -43,7 +41,6 @@ export function Project({ refId, projectName, datasource, onChange, templateVari
         options={projectsWithTemplateVariables}
         value={{ value: projectName, label: projectName }}
         placeholder="Select Project"
-        inputId={`${refId}-project`}
       />
     </QueryEditorRow>
   );

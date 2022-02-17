@@ -51,11 +51,11 @@ export class ShareLink extends PureComponent<Props, State> {
   }
 
   buildUrl = async () => {
-    const { panel, dashboard } = this.props;
+    const { panel } = this.props;
     const { useCurrentTimeRange, useShortUrl, selectedTheme } = this.state;
 
     const shareUrl = await buildShareUrl(useCurrentTimeRange, selectedTheme, panel, useShortUrl);
-    const imageUrl = buildImageUrl(useCurrentTimeRange, dashboard.uid, selectedTheme, panel);
+    const imageUrl = buildImageUrl(useCurrentTimeRange, selectedTheme, panel);
 
     this.setState({ shareUrl, imageUrl });
   };

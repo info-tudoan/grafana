@@ -4,7 +4,7 @@ import Feature from 'ol/Feature';
 import * as style from 'ol/style';
 import * as source from 'ol/source';
 import * as layer from 'ol/layer';
-import { getGeometryField, getLocationMatchers } from 'app/features/geo/utils/location';
+import { dataFrameToPoints, getLocationMatchers } from '../../utils/location';
 
 export interface LastPointConfig {
   icon?: string;
@@ -52,11 +52,16 @@ export const lastPointTracker: MapLayerRegistryItem<LastPointConfig> = {
       update: (data: PanelData) => {
         const frame = data.series[0];
         if (frame && frame.length) {
-          const out = getGeometryField(frame, matchers);
-          if (!out.field) {
+          const info = dataFrameToPoints(frame, matchers);
+          if (info.warning) {
+            console.log('WARN', info.warning);
             return; // ???
           }
-          point.setGeometry(out.field.values.get(frame.length - 1));
+
+          if (info.points?.length) {
+            const last = info.points[info.points.length - 1];
+            point.setGeometry(last);
+          }
         }
       },
     };

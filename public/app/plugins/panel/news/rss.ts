@@ -1,19 +1,37 @@
-import { getProperty } from './feed';
-import { Feed } from './types';
+import { RssFeed, RssItem } from './types';
 
-export function parseRSSFeed(txt: string): Feed {
+export async function loadRSSFeed(url: string): Promise<RssFeed> {
+  const rsp = await fetch(url);
+  const txt = await rsp.text();
   const domParser = new DOMParser();
   const doc = domParser.parseFromString(txt, 'text/xml');
+  const feed: RssFeed = {
+    items: [],
+  };
 
-  const feed: Feed = {
-    items: Array.from(doc.querySelectorAll('item')).map((node) => ({
+  const getProperty = (node: Element, property: string) => {
+    const propNode = node.querySelector(property);
+    if (propNode) {
+      return propNode.textContent ?? '';
+    }
+    return '';
+  };
+
+  doc.querySelectorAll('item').forEach((node) => {
+    const item: RssItem = {
       title: getProperty(node, 'title'),
       link: getProperty(node, 'link'),
       content: getProperty(node, 'description'),
       pubDate: getProperty(node, 'pubDate'),
-      ogImage: node.querySelector("meta[property='og:image']")?.getAttribute('content'),
-    })),
-  };
+    };
+
+    const imageNode = node.querySelector("meta[property='og:image']");
+    if (imageNode) {
+      item.ogImage = imageNode.getAttribute('content');
+    }
+
+    feed.items.push(item);
+  });
 
   return feed;
 }

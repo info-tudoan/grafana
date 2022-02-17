@@ -16,13 +16,12 @@ export const DataSourcesList: FC<Props> = ({ dataSources, layoutMode }) => {
 
   return (
     <ul className={styles.list}>
-      {dataSources.map((dataSource) => {
+      {dataSources.map((dataSource, index) => {
         return (
           <li key={dataSource.id}>
-            <Card href={`datasources/edit/${dataSource.uid}`}>
-              <Card.Heading>{dataSource.name}</Card.Heading>
+            <Card heading={dataSource.name} href={`datasources/edit/${dataSource.uid}`}>
               <Card.Figure>
-                <img src={dataSource.typeLogoUrl} alt="" height="40px" width="40px" className={styles.logo} />
+                <img src={dataSource.typeLogoUrl} alt={dataSource.name} />
               </Card.Figure>
               <Card.Meta>
                 {[
@@ -43,13 +42,8 @@ export default DataSourcesList;
 
 const getStyles = () => {
   return {
-    list: css({
-      listStyle: 'none',
-      display: 'grid',
-      // gap: '8px', Add back when legacy support for old Card interface is dropped
-    }),
-    logo: css({
-      objectFit: 'contain',
-    }),
+    list: css`
+      list-style: none;
+    `,
   };
 };

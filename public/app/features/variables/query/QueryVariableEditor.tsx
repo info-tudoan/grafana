@@ -8,7 +8,9 @@ import { DataSourceInstanceSettings, getDataSourceRef, LoadingState, SelectableV
 
 import { SelectionOptionsEditor } from '../editor/SelectionOptionsEditor';
 import { QueryVariableModel, VariableRefresh, VariableSort, VariableWithMultiSupport } from '../types';
+import { QueryVariableEditorState } from './reducer';
 import { changeQueryVariableDataSource, changeQueryVariableQuery, initQueryVariableEditor } from './actions';
+import { VariableEditorState } from '../editor/reducer';
 import { OnPropChangeArguments, VariableEditorProps } from '../editor/types';
 import { StoreState } from '../../../types';
 import { toVariableIdentifier } from '../state/types';
@@ -19,10 +21,9 @@ import { VariableSectionHeader } from '../editor/VariableSectionHeader';
 import { VariableTextField } from '../editor/VariableTextField';
 import { QueryVariableRefreshSelect } from './QueryVariableRefreshSelect';
 import { QueryVariableSortSelect } from './QueryVariableSortSelect';
-import { getQueryVariableEditorState } from '../editor/selectors';
 
 const mapStateToProps = (state: StoreState) => ({
-  extended: getQueryVariableEditorState(state.templating.editor),
+  editor: state.templating.editor as VariableEditorState<QueryVariableEditorState>,
 });
 
 const mapDispatchToProps = {
@@ -113,15 +114,14 @@ export class QueryVariableEditorUnConnected extends PureComponent<Props, State> 
   };
 
   renderQueryEditor = () => {
-    const { extended, variable } = this.props;
-
-    if (!extended || !extended.dataSource || !extended.VariableQueryEditor) {
+    const { editor, variable } = this.props;
+    if (!editor.extended || !editor.extended.dataSource || !editor.extended.VariableQueryEditor) {
       return null;
     }
 
     const query = variable.query;
-    const datasource = extended.dataSource;
-    const VariableQueryEditor = extended.VariableQueryEditor;
+    const datasource = editor.extended.dataSource;
+    const VariableQueryEditor = editor.extended.VariableQueryEditor;
 
     if (isLegacyQueryEditor(VariableQueryEditor, datasource)) {
       return (
@@ -199,7 +199,7 @@ export class QueryVariableEditorUnConnected extends PureComponent<Props, State> 
                   ).
                 </div>
               }
-              testId={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRegExInputV2}
+              ariaLabel={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsRegExInput}
               grow
             />
             <QueryVariableSortSelect onChange={this.onSortChange} sort={this.props.variable.sort} />

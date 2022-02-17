@@ -2,7 +2,6 @@ import { css } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { Button, Icon, Modal, useStyles2 } from '@grafana/ui';
 import React, { useCallback, useEffect, useState } from 'react';
-
 import Datasource from '../../datasource';
 import { AzureQueryEditorFieldProps, AzureResourceSummaryItem } from '../../types';
 import { Field } from '../Field';
@@ -50,15 +49,7 @@ const ResourceField: React.FC<AzureQueryEditorFieldProps> = ({ query, datasource
 
   return (
     <>
-      <Modal
-        className={styles.modal}
-        title="Select a resource"
-        isOpen={pickerIsOpen}
-        onDismiss={closePicker}
-        // The growing number of rows added to the modal causes a focus
-        // error in the modal, making it impossible to click on new elements
-        trapFocus={false}
-      >
+      <Modal className={styles.modal} title="Select a resource" isOpen={pickerIsOpen} onDismiss={closePicker}>
         <ResourcePicker
           resourcePickerData={datasource.resourcePickerData}
           resourceURI={resource}

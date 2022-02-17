@@ -2,9 +2,11 @@ import { css } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { LinkButton, useStyles2 } from '@grafana/ui';
 import { AlertmanagerAlert, AlertState } from 'app/plugins/datasource/alertmanager/types';
+
 import React, { FC } from 'react';
-import { makeAMLink, makeLabelBasedSilenceLink } from '../../utils/misc';
+import { makeAMLink } from '../../utils/misc';
 import { AnnotationDetailsField } from '../AnnotationDetailsField';
+import { getMatcherQueryParams } from '../../utils/matchers';
 
 interface AmNotificationsAlertDetailsProps {
   alertManagerSourceName: string;
@@ -31,7 +33,9 @@ export const AlertDetails: FC<AmNotificationsAlertDetailsProps> = ({ alert, aler
         )}
         {alert.status.state === AlertState.Active && (
           <LinkButton
-            href={makeLabelBasedSilenceLink(alertManagerSourceName, alert.labels)}
+            href={`${makeAMLink('/alerting/silence/new', alertManagerSourceName)}&${getMatcherQueryParams(
+              alert.labels
+            )}`}
             className={styles.button}
             icon={'bell-slash'}
             size={'sm'}

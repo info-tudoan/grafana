@@ -64,8 +64,12 @@ export interface SetPanelInstanceStatePayload {
   value: any;
 }
 
-export const { panelModelAndPluginReady, setPanelAngularComponent, setPanelInstanceState, cleanUpPanelState } =
-  panelsSlice.actions;
+export const {
+  panelModelAndPluginReady,
+  setPanelAngularComponent,
+  setPanelInstanceState,
+  cleanUpPanelState,
+} = panelsSlice.actions;
 
 export const panelsReducer = panelsSlice.reducer;
 

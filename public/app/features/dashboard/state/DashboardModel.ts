@@ -51,9 +51,8 @@ import { Subscription } from 'rxjs';
 import { appEvents } from '../../../core/core';
 import {
   VariablesChanged,
-  VariablesChangedEvent,
   VariablesChangedInUrl,
-  VariablesTimeRangeProcessDone,
+  VariablesFinishedProcessingTimeRangeChange,
 } from '../../variables/types';
 
 export interface CloneOptions {
@@ -184,7 +183,10 @@ export class DashboardModel {
     this.lastRefresh = Date.now();
     this.appEventsSubscription.add(appEvents.subscribe(VariablesChanged, this.variablesChangedHandler.bind(this)));
     this.appEventsSubscription.add(
-      appEvents.subscribe(VariablesTimeRangeProcessDone, this.variablesTimeRangeProcessDoneHandler.bind(this))
+      appEvents.subscribe(
+        VariablesFinishedProcessingTimeRangeChange,
+        this.variablesFinishedProcessingTimeRangeChangeHandler.bind(this)
+      )
     );
     this.appEventsSubscription.add(
       appEvents.subscribe(VariablesChangedInUrl, this.variablesChangedInUrlHandler.bind(this))
@@ -376,12 +378,12 @@ export class DashboardModel {
     dispatch(onTimeRangeUpdated(timeRange));
   }
 
-  startRefresh(event: VariablesChangedEvent = { refreshAll: true, panelIds: [] }) {
+  startRefresh(affectedPanelIds?: number[]) {
     this.events.publish(new RefreshEvent());
     this.lastRefresh = Date.now();
 
     if (this.panelInEdit) {
-      if (event.refreshAll || event.panelIds.includes(this.panelInEdit.id)) {
+      if (!affectedPanelIds || affectedPanelIds.includes(this.panelInEdit.id)) {
         this.panelInEdit.refresh();
         return;
       }
@@ -389,7 +391,7 @@ export class DashboardModel {
 
     for (const panel of this.panels) {
       if (!this.otherPanelInFullscreen(panel)) {
-        if (event.refreshAll || event.panelIds.includes(panel.id)) {
+        if (!affectedPanelIds || affectedPanelIds.includes(panel.id)) {
           panel.refresh();
         }
       }
@@ -444,7 +446,7 @@ export class DashboardModel {
       return;
     }
 
-    this.startRefresh({ panelIds: this.panelsAffectedByVariableChange, refreshAll: false });
+    this.startRefresh(this.panelsAffectedByVariableChange);
     this.panelsAffectedByVariableChange = null;
   }
 
@@ -564,6 +566,7 @@ export class DashboardModel {
     pull(this.panels, ...panelsToRemove);
     panelsToRemove.map((p) => p.destroy());
     this.sortPanelsByGridPos();
+    this.events.publish(new DashboardPanelsChangedEvent());
   }
 
   processRepeats() {
@@ -949,10 +952,8 @@ export class DashboardModel {
 
       if (row.panels.length > 0) {
         // Use first panel to figure out if it was moved or pushed
-        // If the panel doesn't have gridPos.y, use the row gridPos.y instead.
-        // This can happen for some generated dashboards.
-        const firstPanelYPos = row.panels[0].gridPos.y ?? row.gridPos.y;
-        const yDiff = firstPanelYPos - (row.gridPos.y + row.gridPos.h);
+        const firstPanel = row.panels[0];
+        const yDiff = firstPanel.gridPos.y - (row.gridPos.y + row.gridPos.h);
 
         // start inserting after row
         let insertPos = rowIndex + 1;
@@ -961,9 +962,8 @@ export class DashboardModel {
         let yMax = row.gridPos.y;
 
         for (const panel of row.panels) {
-          // set the y gridPos if it wasn't already set
-          panel.gridPos.y ??= row.gridPos.y;
           // make sure y is adjusted (in case row moved while collapsed)
+          // console.log('yDiff', yDiff);
           panel.gridPos.y -= yDiff;
           // insert after row
           this.panels.splice(insertPos, 0, new PanelModel(panel));
@@ -1217,18 +1217,25 @@ export class DashboardModel {
     });
   }
 
-  private variablesTimeRangeProcessDoneHandler(event: VariablesTimeRangeProcessDone) {
-    const processRepeats = event.payload.variableIds.length > 0;
-    this.variablesChangedHandler(new VariablesChanged({ panelIds: [], refreshAll: true }), processRepeats);
+  private variablesChangedHandler(event: VariablesChanged) {
+    this.variablesChangedBaseHandler(event, true);
   }
 
-  private variablesChangedHandler(event: VariablesChanged, processRepeats = true) {
+  private variablesFinishedProcessingTimeRangeChangeHandler(event: VariablesFinishedProcessingTimeRangeChange) {
+    this.variablesChangedBaseHandler(event);
+  }
+
+  private variablesChangedBaseHandler(
+    event: VariablesChanged | VariablesFinishedProcessingTimeRangeChange,
+    processRepeats = false
+  ) {
     if (processRepeats) {
       this.processRepeats();
     }
 
-    if (event.payload.refreshAll || getTimeSrv().isRefreshOutsideThreshold(this.lastRefresh)) {
-      this.startRefresh({ refreshAll: true, panelIds: [] });
+    if (!event.payload.panelIds || getTimeSrv().isRefreshOutsideThreshold(this.lastRefresh)) {
+      // passing undefined in panelIds means we want to update all panels
+      this.startRefresh(undefined);
       return;
     }
 
@@ -1238,11 +1245,11 @@ export class DashboardModel {
       );
     }
 
-    this.startRefresh(event.payload);
+    this.startRefresh(event.payload.panelIds);
   }
 
   private variablesChangedInUrlHandler(event: VariablesChangedInUrl) {
     this.templateVariableValueUpdated();
-    this.startRefresh(event.payload);
+    this.startRefresh(event.payload.panelIds);
   }
 }

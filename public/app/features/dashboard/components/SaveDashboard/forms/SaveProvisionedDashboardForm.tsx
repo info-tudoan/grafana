@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
-import { Button, ClipboardButton, Modal, stylesFactory, TextArea, useTheme } from '@grafana/ui';
+import { Button, Modal, stylesFactory, TextArea, useTheme } from '@grafana/ui';
+import { CopyToClipboard } from 'app/core/components/CopyToClipboard/CopyToClipboard';
 import { SaveDashboardFormProps } from '../types';
 import { AppEvents, GrafanaTheme } from '@grafana/data';
 import appEvents from '../../../../../core/app_events';
@@ -60,9 +61,9 @@ export const SaveProvisionedDashboardForm: React.FC<SaveDashboardFormProps> = ({
           <Button variant="secondary" onClick={onCancel} fill="outline">
             Cancel
           </Button>
-          <ClipboardButton getText={() => dashboardJSON} onClipboardCopy={onCopyToClipboardSuccess}>
+          <CopyToClipboard text={() => dashboardJSON} elType={Button} onSuccess={onCopyToClipboardSuccess}>
             Copy JSON to clipboard
-          </ClipboardButton>
+          </CopyToClipboard>
           <Button onClick={saveToFile}>Save JSON to file</Button>
         </Modal.ButtonRow>
       </div>

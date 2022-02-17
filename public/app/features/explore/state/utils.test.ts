@@ -1,5 +1,4 @@
 import { lastUsedDatasourceKeyForOrgId } from '../../../core/utils/explore';
-import store from '../../../core/store';
 
 const dataSourceMock = {
   get: jest.fn(),
@@ -8,7 +7,11 @@ jest.mock('app/features/plugins/datasource_srv', () => ({
   getDatasourceSrv: jest.fn(() => dataSourceMock),
 }));
 
-jest.spyOn(store, 'set');
+const storeMock = {
+  getObject: jest.fn().mockReturnValue([]),
+  set: jest.fn(),
+};
+jest.mock('app/core/store', () => storeMock);
 
 import { loadAndInitDatasource } from './utils';
 
@@ -30,7 +33,7 @@ describe('loadAndInitDatasource', () => {
     expect(dataSourceMock.get).toBeCalledWith('Unknown');
     expect(dataSourceMock.get).toBeCalledWith();
     expect(instance).toMatchObject(DEFAULT_DATASOURCE);
-    expect(store.set).toBeCalledWith(lastUsedDatasourceKeyForOrgId(1), DEFAULT_DATASOURCE.uid);
+    expect(storeMock.set).toBeCalledWith(lastUsedDatasourceKeyForOrgId(1), DEFAULT_DATASOURCE.uid);
   });
 
   it('saves last loaded data source uid', async () => {
@@ -41,6 +44,6 @@ describe('loadAndInitDatasource', () => {
     expect(dataSourceMock.get).toBeCalledTimes(1);
     expect(dataSourceMock.get).toBeCalledWith('Test');
     expect(instance).toMatchObject(TEST_DATASOURCE);
-    expect(store.set).toBeCalledWith(lastUsedDatasourceKeyForOrgId(1), TEST_DATASOURCE.uid);
+    expect(storeMock.set).toBeCalledWith(lastUsedDatasourceKeyForOrgId(1), TEST_DATASOURCE.uid);
   });
 });

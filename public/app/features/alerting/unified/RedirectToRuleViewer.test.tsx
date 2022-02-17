@@ -6,6 +6,7 @@ import { DataSourceJsonData, PluginMeta } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import { RedirectToRuleViewer } from './RedirectToRuleViewer';
 import { configureStore } from 'app/store/configureStore';
+import { typeAsJestMock } from '../../../../test/helpers/typeAsJestMock';
 import { useCombinedRulesMatching } from './hooks/useCombinedRule';
 import { CombinedRule, Rule } from '../../../types/unified-alerting';
 import { PromRuleType } from '../../../types/unified-alerting-dto';
@@ -30,7 +31,7 @@ const renderRedirectToRuleViewer = () => {
 };
 
 const mockRuleSourceByName = () => {
-  jest.mocked(getRulesSourceByName).mockReturnValue({
+  typeAsJestMock(getRulesSourceByName).mockReturnValue({
     name: 'prom test',
     type: 'prometheus',
     uid: 'asdf23',
@@ -43,7 +44,7 @@ const mockRuleSourceByName = () => {
 
 describe('Redirect to Rule viewer', () => {
   it('should list rules that match the same name', () => {
-    jest.mocked(useCombinedRulesMatching).mockReturnValue({
+    typeAsJestMock(useCombinedRulesMatching).mockReturnValue({
       result: mockedRules,
       loading: false,
       dispatched: true,
@@ -56,7 +57,7 @@ describe('Redirect to Rule viewer', () => {
   });
 
   it('should redirect to view rule page if only one match', () => {
-    jest.mocked(useCombinedRulesMatching).mockReturnValue({
+    typeAsJestMock(useCombinedRulesMatching).mockReturnValue({
       result: [mockedRules[0]],
       loading: false,
       dispatched: true,

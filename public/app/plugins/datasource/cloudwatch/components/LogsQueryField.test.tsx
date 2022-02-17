@@ -49,6 +49,7 @@ describe('CloudWatchLogsQueryField', () => {
         onChange={onChange}
       />
     );
+    const getRegionSelect = () => wrapper.find({ label: 'Region' }).props().inputEl;
     const getLogGroupSelect = () => wrapper.find({ label: 'Log Groups' }).props().inputEl;
 
     getLogGroupSelect().props.onChange([{ value: 'log_group_1' }]);
@@ -56,12 +57,12 @@ describe('CloudWatchLogsQueryField', () => {
     expect(getLogGroupSelect().props.value[0].value).toBe('log_group_1');
 
     // We select new region where the selected log group does not exist
-    await (wrapper.instance() as CloudWatchLogsQueryField).onRegionChange('region2');
+    await getRegionSelect().props.onChange({ value: 'region2' });
 
     // We clear the select
     expect(getLogGroupSelect().props.value.length).toBe(0);
     // Make sure we correctly updated the upstream state
-    expect(onChange).toHaveBeenLastCalledWith({ logGroupNames: [] });
+    expect(onChange.mock.calls[onChange.mock.calls.length - 1][0]).toEqual({ region: 'region2', logGroupNames: [] });
   });
 
   it('should merge results of remote log groups search with existing results', async () => {

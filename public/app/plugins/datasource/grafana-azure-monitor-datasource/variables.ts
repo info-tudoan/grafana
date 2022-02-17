@@ -12,7 +12,6 @@ import { AzureQueryType, AzureMonitorQuery } from './types';
 import { getTemplateSrv } from '@grafana/runtime';
 import { migrateStringQueriesToObjectQueries } from './grafanaTemplateVariableFns';
 import { GrafanaTemplateVariableQuery } from './types/templateVariables';
-import messageFromError from './utils/messageFromError';
 export class VariableSupport extends CustomVariableSupport<DataSource, AzureMonitorQuery> {
   constructor(private readonly datasource: DataSource) {
     super();
@@ -27,14 +26,10 @@ export class VariableSupport extends CustomVariableSupport<DataSource, AzureMoni
       const queryObj = await migrateStringQueriesToObjectQueries(request.targets[0], { datasource: this.datasource });
 
       if (queryObj.queryType === AzureQueryType.GrafanaTemplateVariableFn && queryObj.grafanaTemplateVariableFn) {
-        try {
-          const templateVariablesResults = await this.callGrafanaTemplateVariableFn(queryObj.grafanaTemplateVariableFn);
-          return {
-            data: templateVariablesResults ? [toDataFrame(templateVariablesResults)] : [],
-          };
-        } catch (err) {
-          return { data: [], error: { message: messageFromError(err) } };
-        }
+        const templateVariablesResults = await this.callGrafanaTemplateVariableFn(queryObj.grafanaTemplateVariableFn);
+        return {
+          data: templateVariablesResults ? [toDataFrame(templateVariablesResults)] : [],
+        };
       }
       request.targets[0] = queryObj;
       return lastValueFrom(this.datasource.query(request));

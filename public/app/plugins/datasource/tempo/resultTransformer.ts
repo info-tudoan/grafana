@@ -9,12 +9,9 @@ import {
   TraceKeyValuePair,
   TraceLog,
   TraceSpanRow,
-  dateTimeFormat,
 } from '@grafana/data';
-import { SpanStatus, SpanStatusCode } from '@opentelemetry/api';
+import { SpanKind, SpanStatus, SpanStatusCode } from '@opentelemetry/api';
 import { collectorTypes } from '@opentelemetry/exporter-collector';
-import formatDistance from 'date-fns/formatDistance';
-import differenceInHours from 'date-fns/differenceInHours';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { createGraphFrames } from './graphTransform';
 
@@ -219,11 +216,13 @@ function getSpanTags(
     }
   }
 
-  if (span.kind !== undefined) {
-    const split = span.kind.toString().toLowerCase().split('_');
+  if (
+    span.kind !== undefined &&
+    span.kind !== collectorTypes.opentelemetryProto.trace.v1.Span.SpanKind.SPAN_KIND_INTERNAL
+  ) {
     spanTags.push({
       key: 'span.kind',
-      value: split.length ? split[split.length - 1] : span.kind.toString(),
+      value: SpanKind[collectorTypes.opentelemetryProto.trace.v1.Span.SpanKind[span.kind] as any].toLowerCase(),
     });
   }
 
@@ -307,9 +306,9 @@ export function transformFromOTLP(
 /**
  * Transforms trace dataframes to the OpenTelemetry format
  */
-export function transformToOTLP(data: MutableDataFrame): {
-  batches: collectorTypes.opentelemetryProto.trace.v1.ResourceSpans[];
-} {
+export function transformToOTLP(
+  data: MutableDataFrame
+): { batches: collectorTypes.opentelemetryProto.trace.v1.ResourceSpans[] } {
   let result: { batches: collectorTypes.opentelemetryProto.trace.v1.ResourceSpans[] } = {
     batches: [],
   };
@@ -491,12 +490,7 @@ export function transformTrace(response: DataQueryResponse, nodeGraph = false): 
     return emptyDataQueryResponse;
   }
 
-  try {
-    parseJsonFields(frame);
-  } catch (error) {
-    console.error(error);
-    return { error: { message: 'Unable to parse trace response: ' + error }, data: [] };
-  }
+  parseJsonFields(frame);
 
   let data = [...response.data];
   if (nodeGraph) {
@@ -533,7 +527,7 @@ function parseJsonFields(frame: DataFrame) {
   }
 }
 
-export type SearchResponse = {
+type SearchResponse = {
   traceID: string;
   rootServiceName: string;
   rootTraceName: string;
@@ -566,7 +560,7 @@ export function createTableFrameFromSearch(data: SearchResponse[], instanceSetti
         },
       },
       { name: 'traceName', type: FieldType.string, config: { displayNameFromDS: 'Trace name' } },
-      { name: 'startTime', type: FieldType.string, config: { displayNameFromDS: 'Start time' } },
+      { name: 'startTime', type: FieldType.time, config: { displayNameFromDS: 'Start time' } },
       { name: 'duration', type: FieldType.number, config: { displayNameFromDS: 'Duration', unit: 'ms' } },
     ],
     meta: {
@@ -577,9 +571,7 @@ export function createTableFrameFromSearch(data: SearchResponse[], instanceSetti
     return frame;
   }
   // Show the most recent traces
-  const traceData = data
-    .sort((a, b) => parseInt(b?.startTimeUnixNano!, 10) / 1000000 - parseInt(a?.startTimeUnixNano!, 10) / 1000000)
-    .map(transformToTraceData);
+  const traceData = data.map(transformToTraceData).sort((a, b) => b?.startTime! - a?.startTime!);
 
   for (const trace of traceData) {
     frame.add(trace);
@@ -596,21 +588,9 @@ function transformToTraceData(data: SearchResponse) {
   if (data.rootTraceName) {
     traceName += data.rootTraceName;
   }
-
-  const traceStartTime = parseInt(data.startTimeUnixNano!, 10) / 1000000;
-
-  let startTime = dateTimeFormat(traceStartTime);
-
-  if (Math.abs(differenceInHours(new Date(traceStartTime), Date.now())) <= 1) {
-    startTime = formatDistance(new Date(traceStartTime), Date.now(), {
-      addSuffix: true,
-      includeSeconds: true,
-    });
-  }
-
   return {
     traceID: data.traceID,
-    startTime: startTime,
+    startTime: parseInt(data.startTimeUnixNano, 10) / 1000 / 1000,
     duration: data.durationMs,
     traceName,
   };

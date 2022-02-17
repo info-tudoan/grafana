@@ -1,4 +1,5 @@
 import Datasource from '../datasource';
+import { mocked } from 'ts-jest/utils';
 
 type DeepPartial<T> = {
   [P in keyof T]?: DeepPartial<T[P]>;
@@ -37,16 +38,14 @@ export default function createMockDatasource(overrides?: DeepPartial<Datasource>
       getDeprecatedDefaultWorkSpace: () => 'defaultWorkspaceId',
     },
     resourcePickerData: {
-      getSubscriptions: () => jest.fn().mockResolvedValue([]),
-      getResourceGroupsBySubscriptionId: jest.fn().mockResolvedValue([]),
-      getResourcesForResourceGroup: jest.fn().mockResolvedValue([]),
-      getResourceURIFromWorkspace: jest.fn().mockReturnValue(''),
-      transformVariablesToRow: jest.fn().mockReturnValue({}),
+      getResourcePickerData: () => ({}),
+      getResourcesForResourceGroup: () => ({}),
+      getResourceURIFromWorkspace: () => '',
     },
     ...overrides,
   };
 
   const mockDatasource = _mockDatasource as Datasource;
 
-  return jest.mocked(mockDatasource, true);
+  return mocked(mockDatasource, true);
 }

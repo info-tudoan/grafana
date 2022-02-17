@@ -1,19 +1,17 @@
+import React, { FC, useMemo } from 'react';
 import { SelectableValue } from '@grafana/data';
 import { Select } from '@grafana/ui';
-import React, { FC, useMemo } from 'react';
-
-import { SELECT_WIDTH } from '../constants';
-import { getAlignmentPickerData } from '../functions';
 import { MetricQuery } from '../types';
+import { getAlignmentPickerData } from '../functions';
+import { SELECT_WIDTH } from '../constants';
 
 export interface Props {
-  inputId: string;
   onChange: (query: MetricQuery) => void;
   query: MetricQuery;
   templateVariableOptions: Array<SelectableValue<string>>;
 }
 
-export const AlignmentFunction: FC<Props> = ({ inputId, query, templateVariableOptions, onChange }) => {
+export const AlignmentFunction: FC<Props> = ({ query, templateVariableOptions, onChange }) => {
   const { valueType, metricKind, perSeriesAligner: psa, preprocessor } = query;
   const { perSeriesAligner, alignOptions } = useMemo(
     () => getAlignmentPickerData(valueType, metricKind, psa, preprocessor),
@@ -38,7 +36,6 @@ export const AlignmentFunction: FC<Props> = ({ inputId, query, templateVariableO
         },
       ]}
       placeholder="Select Alignment"
-      inputId={inputId}
     ></Select>
   );
 };

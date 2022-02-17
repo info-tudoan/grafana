@@ -6,8 +6,8 @@ import { isAdHoc } from '../variables/guard';
 import { AdHocVariableFilter, AdHocVariableModel, VariableModel } from '../variables/types';
 import { getDataSourceSrv, setTemplateSrv, TemplateSrv as BaseTemplateSrv } from '@grafana/runtime';
 import { FormatOptions, formatRegistry, FormatRegistryID } from './formatRegistry';
-import { variableAdapters } from '../variables/adapters';
-import { ALL_VARIABLE_TEXT, ALL_VARIABLE_VALUE } from '../variables/constants';
+import { ALL_VARIABLE_TEXT, ALL_VARIABLE_VALUE } from '../variables/state/types';
+import { safeStringifyValue } from '../../core/utils/explore';
 
 interface FieldAccessorCache {
   [key: string]: (obj: any) => any;
@@ -115,7 +115,7 @@ export class TemplateSrv implements BaseTemplateSrv {
     return filters;
   }
 
-  formatValue(value: any, format: any, variable: any, text?: string): string {
+  formatValue(value: any, format: any, variable: any, text?: string) {
     // for some scopedVars there is no variable
     variable = variable || {};
 
@@ -189,18 +189,10 @@ export class TemplateSrv implements BaseTemplateSrv {
     return variableName;
   }
 
-  containsTemplate(target: string | undefined): boolean {
-    if (!target) {
-      return false;
-    }
-    const name = this.getVariableName(target);
+  variableExists(expression: string): boolean {
+    const name = this.getVariableName(expression);
     const variable = name && this.getVariableAtIndex(name);
     return variable !== null && variable !== undefined;
-  }
-
-  variableExists(expression: string): boolean {
-    deprecationWarning('template_srv.ts', 'variableExists', 'containsTemplate');
-    return this.containsTemplate(expression);
   }
 
   highlightVariablesAsHtml(str: string) {
@@ -290,9 +282,9 @@ export class TemplateSrv implements BaseTemplateSrv {
         return match;
       }
 
-      if (fmt === FormatRegistryID.queryParam || isAdHoc(variable)) {
-        const value = variableAdapters.get(variable.type).getValueForUrl(variable);
-        const text = isAdHoc(variable) ? variable.id : variable.current.text;
+      if (isAdHoc(variable)) {
+        const value = safeStringifyValue(variable.filters);
+        const text = variable.id;
 
         return this.formatValue(value, fmt, variable, text);
       }
@@ -309,7 +301,7 @@ export class TemplateSrv implements BaseTemplateSrv {
         value = this.getAllValue(variable);
         text = ALL_VARIABLE_TEXT;
         // skip formatting of custom all values
-        if (variable.allValue && fmt !== FormatRegistryID.text) {
+        if (variable.allValue && fmt !== FormatRegistryID.text && fmt !== FormatRegistryID.queryParam) {
           return this.replace(value);
         }
       }

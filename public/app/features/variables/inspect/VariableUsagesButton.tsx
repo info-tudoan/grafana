@@ -1,6 +1,5 @@
 import React, { FC, useMemo } from 'react';
 import { IconButton } from '@grafana/ui';
-import { reportInteraction } from '@grafana/runtime';
 
 import { UsagesToNetwork } from './utils';
 import { NetworkGraphModal } from './NetworkGraphModal';
@@ -27,16 +26,7 @@ export const VariableUsagesButton: FC<Props> = ({ id, usages, isAdhoc }) => {
   return (
     <NetworkGraphModal show={false} title={`Showing usages for: $${id}`} nodes={nodes} edges={network.edges}>
       {({ showModal }) => {
-        return (
-          <IconButton
-            onClick={() => {
-              reportInteraction('Show variable usages');
-              showModal();
-            }}
-            name="code-branch"
-            title="Show usages"
-          />
-        );
+        return <IconButton onClick={() => showModal()} name="code-branch" title="Show usages" />;
       }}
     </NetworkGraphModal>
   );

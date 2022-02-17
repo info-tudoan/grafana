@@ -14,14 +14,13 @@ import { InspectErrorTab } from 'app/features/inspector/InspectErrorTab';
 interface DispatchProps {
   width: number;
   exploreId: ExploreId;
-  timeZone: TimeZone;
   onClose: () => void;
 }
 
 type Props = DispatchProps & ConnectedProps<typeof connector>;
 
 export function ExploreQueryInspector(props: Props) {
-  const { loading, width, onClose, queryResponse, timeZone } = props;
+  const { loading, width, onClose, queryResponse } = props;
   const dataFrames = queryResponse?.series || [];
   const error = queryResponse?.error;
 
@@ -48,7 +47,6 @@ export function ExploreQueryInspector(props: Props) {
         data={dataFrames}
         isLoading={loading}
         options={{ withTransforms: false, withFieldConfig: false }}
-        timeZone={timeZone}
       />
     ),
   };

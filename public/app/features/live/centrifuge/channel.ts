@@ -140,14 +140,7 @@ export class CentrifugeLiveChannel<T = any> {
    */
   getStream() {
     return new Observable((subscriber) => {
-      const initialMessage = { ...this.currentStatus };
-      if (this.lastMessageWithSchema?.schema) {
-        // send just schema instead of schema+data to avoid having data gaps
-        initialMessage.message = { schema: this.lastMessageWithSchema?.schema };
-      }
-
-      subscriber.next({ ...this.currentStatus, message: this.lastMessageWithSchema });
-
+      subscriber.next({ ...this.currentStatus });
       const sub = this.stream.subscribe(subscriber);
       return () => {
         sub.unsubscribe();

@@ -80,7 +80,6 @@ export class ConfigEditor extends PureComponent<Props, State> {
                 Version
               </InlineFormLabel>
               <Select
-                aria-label="Graphite version"
                 menuShouldPortal
                 value={currentVersion}
                 options={graphiteVersions}
@@ -93,7 +92,6 @@ export class ConfigEditor extends PureComponent<Props, State> {
             <div className="gf-form">
               <InlineFormLabel tooltip={this.renderTypeHelp}>Type</InlineFormLabel>
               <Select
-                aria-label="Graphite backend type"
                 menuShouldPortal
                 options={graphiteTypes}
                 value={graphiteTypes.find((type) => type.value === options.jsonData.graphiteType)}

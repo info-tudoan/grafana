@@ -8,14 +8,15 @@ import { contextSrv } from 'app/core/core';
 
 export interface Props {
   exploreUrl: string;
-  canSave: boolean;
-  canDelete: boolean;
+  isReadOnly: boolean;
   onDelete: () => void;
   onSubmit: (event: any) => void;
   onTest: (event: any) => void;
 }
 
-const ButtonRow: FC<Props> = ({ canSave, canDelete, onDelete, onSubmit, onTest, exploreUrl }) => {
+const ButtonRow: FC<Props> = ({ isReadOnly, onDelete, onSubmit, onTest, exploreUrl }) => {
+  const canEditDataSources = !isReadOnly && contextSrv.hasPermission(AccessControlAction.DataSourcesWrite);
+  const canDeleteDataSources = !isReadOnly && contextSrv.hasPermission(AccessControlAction.DataSourcesDelete);
   const canExploreDataSources = contextSrv.hasPermission(AccessControlAction.DataSourcesExplore);
 
   return (
@@ -29,24 +30,24 @@ const ButtonRow: FC<Props> = ({ canSave, canDelete, onDelete, onSubmit, onTest, 
       <Button
         type="button"
         variant="destructive"
-        disabled={!canDelete}
+        disabled={!canDeleteDataSources}
         onClick={onDelete}
         aria-label={selectors.pages.DataSource.delete}
       >
         Delete
       </Button>
-      {canSave && (
+      {canEditDataSources && (
         <Button
           type="submit"
           variant="primary"
-          disabled={!canSave}
+          disabled={!canEditDataSources}
           onClick={(event) => onSubmit(event)}
           aria-label={selectors.pages.DataSource.saveAndTest}
         >
           Save &amp; test
         </Button>
       )}
-      {!canSave && (
+      {!canEditDataSources && (
         <Button type="submit" variant="primary" onClick={onTest}>
           Test
         </Button>

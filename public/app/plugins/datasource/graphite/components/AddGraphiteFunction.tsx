@@ -33,7 +33,7 @@ export function AddGraphiteFunction({ funcDefs }: Props) {
 
   return (
     <Segment
-      Component={<Button icon="plus" variant="secondary" className={cx(styles.button)} aria-label="Add new function" />}
+      Component={<Button icon="plus" variant="secondary" className={cx(styles.button)} />}
       options={options}
       onChange={setValue}
       inputMinWidth={150}

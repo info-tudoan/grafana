@@ -1,5 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { DashboardAclDTO, DashboardInitError, DashboardInitPhase, DashboardState } from 'app/types';
+import {
+  DashboardAclDTO,
+  DashboardInitError,
+  DashboardInitPhase,
+  DashboardState,
+  QueriesToUpdateOnDashboardLoad,
+} from 'app/types';
 import { AngularComponent } from '@grafana/runtime';
 import { processAclItems } from 'app/core/utils/acl';
 import { DashboardModel } from './DashboardModel';
@@ -11,10 +17,11 @@ export const initialState: DashboardState = {
   isInitSlow: false,
   getModel: () => null,
   permissions: [],
+  modifiedQueries: null,
   initError: null,
 };
 
-const dashboardSlice = createSlice({
+const dashbardSlice = createSlice({
   name: 'dashboard',
   initialState,
   reducers: {
@@ -48,6 +55,12 @@ const dashboardSlice = createSlice({
       state.initError = null;
       state.getModel = () => null;
     },
+    setDashboardQueriesToUpdateOnLoad: (state, action: PayloadAction<QueriesToUpdateOnDashboardLoad>) => {
+      state.modifiedQueries = action.payload;
+    },
+    clearDashboardQueriesToUpdateOnLoad: (state) => {
+      state.modifiedQueries = null;
+    },
     addPanel: (state, action: PayloadAction<PanelModel>) => {
       //state.panels[action.payload.id] = { pluginId: action.payload.type };
     },
@@ -77,10 +90,12 @@ export const {
   dashboardInitCompleted,
   dashboardInitServices,
   cleanUpDashboard,
+  setDashboardQueriesToUpdateOnLoad,
+  clearDashboardQueriesToUpdateOnLoad,
   addPanel,
-} = dashboardSlice.actions;
+} = dashbardSlice.actions;
 
-export const dashboardReducer = dashboardSlice.reducer;
+export const dashboardReducer = dashbardSlice.reducer;
 
 export default {
   dashboard: dashboardReducer,

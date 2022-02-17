@@ -1,6 +1,7 @@
 import LanguageProvider from './language_provider';
+import { PromQuery } from '../prometheus/types';
 import { ElasticDatasource } from './datasource';
-import { AbstractLabelOperator, AbstractQuery, DataSourceInstanceSettings } from '@grafana/data';
+import { DataSourceInstanceSettings } from '@grafana/data';
 import { ElasticsearchOptions, ElasticsearchQuery } from './types';
 import { TemplateSrv } from '../../../features/templating/template_srv';
 
@@ -26,36 +27,145 @@ const baseLogsQuery: Partial<ElasticsearchQuery> = {
   metrics: [{ type: 'logs', id: '1' }],
 };
 
-describe('transform abstract query to elasticsearch query', () => {
-  it('With some labels', () => {
+describe('transform prometheus query to elasticsearch query', () => {
+  it('With exact equals labels ( 2 labels ) and metric __name__', () => {
     const instance = new LanguageProvider(dataSource);
-    const abstractQuery: AbstractQuery = {
-      refId: 'bar',
-      labelMatchers: [
-        { name: 'label1', operator: AbstractLabelOperator.Equal, value: 'value1' },
-        { name: 'label2', operator: AbstractLabelOperator.NotEqual, value: 'value2' },
-        { name: 'label3', operator: AbstractLabelOperator.EqualRegEx, value: 'value3' },
-        { name: 'label4', operator: AbstractLabelOperator.NotEqualRegEx, value: 'value4' },
-      ],
-    };
-    const result = instance.importFromAbstractQuery(abstractQuery);
+    const promQuery: PromQuery = { refId: 'bar', expr: 'my_metric{label1="value1",label2="value2"}' };
+    const result = instance.importQueries([promQuery], 'prometheus');
 
-    expect(result).toEqual({
-      ...baseLogsQuery,
-      query: 'label1:"value1" AND NOT label2:"value2" AND label3:/value3/ AND NOT label4:/value4/',
-      refId: abstractQuery.refId,
-    });
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query: '__name__:"my_metric" AND label1:"value1" AND label2:"value2"',
+        refId: promQuery.refId,
+      },
+    ]);
   });
 
-  it('Empty query', () => {
+  it('With exact equals labels ( 1 labels ) and metric __name__', () => {
     const instance = new LanguageProvider(dataSource);
-    const abstractQuery = { labelMatchers: [], refId: 'foo' };
-    const result = instance.importFromAbstractQuery(abstractQuery);
+    const promQuery: PromQuery = { refId: 'bar', expr: 'my_metric{label1="value1"}' };
+    const result = instance.importQueries([promQuery], 'prometheus');
 
-    expect(result).toEqual({
-      ...baseLogsQuery,
-      query: '',
-      refId: abstractQuery.refId,
-    });
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query: '__name__:"my_metric" AND label1:"value1"',
+        refId: promQuery.refId,
+      },
+    ]);
+  });
+
+  it('With exact equals labels ( 1 labels )', () => {
+    const instance = new LanguageProvider(dataSource);
+    const promQuery: PromQuery = { refId: 'bar', expr: '{label1="value1"}' };
+    const result = instance.importQueries([promQuery], 'prometheus');
+
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query: 'label1:"value1"',
+        refId: promQuery.refId,
+      },
+    ]);
+  });
+
+  it('With no label and metric __name__', () => {
+    const instance = new LanguageProvider(dataSource);
+    const promQuery: PromQuery = { refId: 'bar', expr: 'my_metric{}' };
+    const result = instance.importQueries([promQuery], 'prometheus');
+
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query: '__name__:"my_metric"',
+        refId: promQuery.refId,
+      },
+    ]);
+  });
+
+  it('With no label and metric __name__ without bracket', () => {
+    const instance = new LanguageProvider(dataSource);
+    const promQuery: PromQuery = { refId: 'bar', expr: 'my_metric' };
+    const result = instance.importQueries([promQuery], 'prometheus');
+
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query: '__name__:"my_metric"',
+        refId: promQuery.refId,
+      },
+    ]);
+  });
+
+  it('With rate function and exact equals labels ( 2 labels ) and metric __name__', () => {
+    const instance = new LanguageProvider(dataSource);
+    const promQuery: PromQuery = { refId: 'bar', expr: 'rate(my_metric{label1="value1",label2="value2"}[5m])' };
+    const result = instance.importQueries([promQuery], 'prometheus');
+
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query: '__name__:"my_metric" AND label1:"value1" AND label2:"value2"',
+        refId: promQuery.refId,
+      },
+    ]);
+  });
+
+  it('With rate function and exact equals labels not equals labels regex and not regex labels and metric __name__', () => {
+    const instance = new LanguageProvider(dataSource);
+    const promQuery: PromQuery = {
+      refId: 'bar',
+      expr: 'rate(my_metric{label1="value1",label2!="value2",label3=~"value.+",label4!~".*tothemoon"}[5m])',
+    };
+    const result = instance.importQueries([promQuery], 'prometheus');
+
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query:
+          '__name__:"my_metric" AND label1:"value1" AND NOT label2:"value2" AND label3:/value.+/ AND NOT label4:/.*tothemoon/',
+        refId: promQuery.refId,
+      },
+    ]);
+  });
+});
+
+describe('transform malformed prometheus query to elasticsearch query', () => {
+  it('With only bracket', () => {
+    const instance = new LanguageProvider(dataSource);
+    const promQuery: PromQuery = { refId: 'bar', expr: '{' };
+    const result = instance.importQueries([promQuery], 'prometheus');
+
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query: '',
+        refId: promQuery.refId,
+      },
+    ]);
+  });
+
+  it('Empty query', async () => {
+    const instance = new LanguageProvider(dataSource);
+    const promQuery: PromQuery = { refId: 'bar', expr: '' };
+    const result = instance.importQueries([promQuery], 'prometheus');
+
+    expect(result).toEqual([
+      {
+        ...baseLogsQuery,
+        query: '',
+        refId: promQuery.refId,
+      },
+    ]);
+  });
+});
+
+describe('Unsupportated datasources', () => {
+  it('Generates a default query', async () => {
+    const instance = new LanguageProvider(dataSource);
+    const someQuery = { refId: 'bar' };
+    const result = instance.importQueries([someQuery], 'THIS DATASOURCE TYPE DOESNT EXIST');
+    expect(result).toEqual([{ refId: someQuery.refId }]);
   });
 });

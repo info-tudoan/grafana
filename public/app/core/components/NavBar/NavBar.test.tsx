@@ -1,11 +1,10 @@
 import React from 'react';
-import { Provider } from 'react-redux';
-import { Router } from 'react-router-dom';
+import { NavBar } from './NavBar';
 import { render, screen } from '@testing-library/react';
+import { Router } from 'react-router-dom';
 import { locationService } from '@grafana/runtime';
 import { configureStore } from 'app/store/configureStore';
-import TestProvider from '../../../../test/helpers/TestProvider';
-import { NavBar } from './NavBar';
+import { Provider } from 'react-redux';
 
 jest.mock('app/core/services/context_srv', () => ({
   contextSrv: {
@@ -23,11 +22,9 @@ const setup = () => {
 
   return render(
     <Provider store={store}>
-      <TestProvider>
-        <Router history={locationService.getHistory()}>
-          <NavBar />
-        </Router>
-      </TestProvider>
+      <Router history={locationService.getHistory()}>
+        <NavBar />
+      </Router>
     </Provider>
   );
 };
@@ -39,18 +36,10 @@ describe('Render', () => {
     expect(sidemenu).toBeInTheDocument();
   });
 
-  it('should not render when in kiosk mode is tv', async () => {
+  it('should not render when in kiosk mode', async () => {
     setup();
 
-    locationService.partial({ kiosk: 'tv' });
-    const sidemenu = screen.queryByTestId('sidemenu');
-    expect(sidemenu).not.toBeInTheDocument();
-  });
-
-  it('should not render when in kiosk mode is full', async () => {
-    setup();
-
-    locationService.partial({ kiosk: '1' });
+    locationService.partial({ kiosk: 'full' });
     const sidemenu = screen.queryByTestId('sidemenu');
     expect(sidemenu).not.toBeInTheDocument();
   });

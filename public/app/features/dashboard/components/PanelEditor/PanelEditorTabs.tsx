@@ -40,8 +40,18 @@ export const PanelEditorTabs: FC<PanelEditorTabsProps> = React.memo(({ panel, da
     <div className={styles.wrapper}>
       <TabsBar className={styles.tabBar} hideBorder>
         {tabs.map((tab) => {
-          if (tab.id === PanelEditorTabId.Alert) {
-            return renderAlertTab(tab, panel, dashboard, onChangeTab);
+          if (config.unifiedAlertingEnabled && tab.id === PanelEditorTabId.Alert) {
+            return (
+              <PanelAlertTab
+                key={tab.id}
+                label={tab.text}
+                active={tab.active}
+                onChangeTab={() => onChangeTab(tab)}
+                icon={tab.icon as IconName}
+                panel={panel}
+                dashboard={dashboard}
+              />
+            );
           }
           return (
             <Tab
@@ -75,48 +85,6 @@ function getCounter(panel: PanelModel, tab: PanelEditorTab) {
     case PanelEditorTabId.Transform:
       const transformations = panel.getTransformations() ?? [];
       return transformations.length;
-  }
-
-  return null;
-}
-
-function renderAlertTab(
-  tab: PanelEditorTab,
-  panel: PanelModel,
-  dashboard: DashboardModel,
-  onChangeTab: (tab: PanelEditorTab) => void
-) {
-  const alertingDisabled = !config.alertingEnabled && !config.unifiedAlertingEnabled;
-
-  if (alertingDisabled) {
-    return null;
-  }
-
-  if (config.unifiedAlertingEnabled) {
-    return (
-      <PanelAlertTab
-        key={tab.id}
-        label={tab.text}
-        active={tab.active}
-        onChangeTab={() => onChangeTab(tab)}
-        icon={tab.icon as IconName}
-        panel={panel}
-        dashboard={dashboard}
-      />
-    );
-  }
-
-  if (config.alertingEnabled) {
-    return (
-      <Tab
-        key={tab.id}
-        label={tab.text}
-        active={tab.active}
-        onChangeTab={() => onChangeTab(tab)}
-        icon={tab.icon as IconName}
-        counter={getCounter(panel, tab)}
-      />
-    );
   }
 
   return null;

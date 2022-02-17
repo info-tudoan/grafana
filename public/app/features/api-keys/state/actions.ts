@@ -1,37 +1,31 @@
 ﻿import { getBackendSrv } from 'app/core/services/backend_srv';
 import { ApiKey, ThunkResult } from 'app/types';
-import { apiKeysLoaded, includeExpiredToggled, isFetching, setSearchQuery } from './reducers';
+import { apiKeysLoaded, setSearchQuery } from './reducers';
 
-export function addApiKey(apiKey: ApiKey, openModal: (key: string) => void): ThunkResult<void> {
+export function addApiKey(
+  apiKey: ApiKey,
+  openModal: (key: string) => void,
+  includeExpired: boolean
+): ThunkResult<void> {
   return async (dispatch) => {
     const result = await getBackendSrv().post('/api/auth/keys', apiKey);
     dispatch(setSearchQuery(''));
-    dispatch(loadApiKeys());
+    dispatch(loadApiKeys(includeExpired));
     openModal(result.key);
   };
 }
 
-export function loadApiKeys(): ThunkResult<void> {
+export function loadApiKeys(includeExpired: boolean): ThunkResult<void> {
   return async (dispatch) => {
-    dispatch(isFetching());
-    const [keys, keysIncludingExpired] = await Promise.all([
-      getBackendSrv().get('/api/auth/keys?includeExpired=false'),
-      getBackendSrv().get('/api/auth/keys?includeExpired=true'),
-    ]);
-    dispatch(apiKeysLoaded({ keys, keysIncludingExpired }));
+    const response = await getBackendSrv().get('/api/auth/keys?includeExpired=' + includeExpired);
+    dispatch(apiKeysLoaded(response));
   };
 }
 
-export function deleteApiKey(id: number): ThunkResult<void> {
+export function deleteApiKey(id: number, includeExpired: boolean): ThunkResult<void> {
   return async (dispatch) => {
     getBackendSrv()
       .delete(`/api/auth/keys/${id}`)
-      .then(() => dispatch(loadApiKeys()));
-  };
-}
-
-export function toggleIncludeExpired(): ThunkResult<void> {
-  return (dispatch) => {
-    dispatch(includeExpiredToggled());
+      .then(() => dispatch(loadApiKeys(includeExpired)));
   };
 }

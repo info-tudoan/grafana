@@ -19,7 +19,7 @@ import { graphPanelMigrationHandler } from './GraphMigrations';
 import { DataWarning, GraphFieldConfig, GraphPanelOptions } from './types';
 
 import { auto } from 'angular';
-import { locationService } from '@grafana/runtime';
+import { getLocationSrv } from '@grafana/runtime';
 import { getDataTimeRange } from './utils';
 import { changePanelPlugin } from 'app/features/panel/state/actions';
 import { dispatch } from 'app/store/store';
@@ -266,9 +266,12 @@ export class GraphCtrl extends MetricsPanelCtrl {
     if (range) {
       dataWarning.actionText = 'Zoom to data';
       dataWarning.action = () => {
-        locationService.partial({
-          from: range.from,
-          to: range.to,
+        getLocationSrv().update({
+          partial: true,
+          query: {
+            from: range.from,
+            to: range.to,
+          },
         });
       };
     }

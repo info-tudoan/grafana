@@ -27,7 +27,6 @@ import {
 import { timeOptions } from '../../utils/time';
 import { getFormStyles } from './formStyles';
 import { matcherFieldOptions } from '../../utils/alertmanager';
-import { useMuteTimingOptions } from '../../hooks/useMuteTimingOptions';
 
 export interface AmRoutesExpandedFormProps {
   onCancel: () => void;
@@ -44,7 +43,6 @@ export const AmRoutesExpandedForm: FC<AmRoutesExpandedFormProps> = ({ onCancel, 
     !!routes.groupWaitValue || !!routes.groupIntervalValue || !!routes.repeatIntervalValue
   );
   const [groupByOptions, setGroupByOptions] = useState(stringsToSelectableValues(routes.groupBy));
-  const muteTimingOptions = useMuteTimingOptions();
 
   return (
     <Form defaultValues={routes} onSubmit={onSave}>
@@ -82,7 +80,6 @@ export const AmRoutesExpandedForm: FC<AmRoutesExpandedFormProps> = ({ onCancel, 
                                 onChange={(value) => onChange(value?.value)}
                                 options={matcherFieldOptions}
                                 aria-label="Operator"
-                                menuShouldPortal
                               />
                             )}
                             defaultValue={field.operator}
@@ -313,27 +310,6 @@ export const AmRoutesExpandedForm: FC<AmRoutesExpandedFormProps> = ({ onCancel, 
               </Field>
             </>
           )}
-          <Field
-            label="Mute timings"
-            data-testid="am-mute-timing-select"
-            description="Add mute timing to policy"
-            invalid={!!errors.muteTimeIntervals}
-          >
-            <InputControl
-              render={({ field: { onChange, ref, ...field } }) => (
-                <MultiSelect
-                  aria-label="Mute timings"
-                  menuShouldPortal
-                  {...field}
-                  className={formStyles.input}
-                  onChange={(value) => onChange(mapMultiSelectValueToStrings(value))}
-                  options={muteTimingOptions}
-                />
-              )}
-              control={control}
-              name="muteTimeIntervals"
-            />
-          </Field>
           <div className={styles.buttonGroup}>
             <Button type="submit">Save policy</Button>
             <Button onClick={onCancel} fill="outline" type="button" variant="secondary">

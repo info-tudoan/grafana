@@ -30,16 +30,15 @@ const fixedRoleGroupNames: Record<string, string> = {
 };
 
 interface RolePickerMenuProps {
-  builtInRole?: OrgRole;
-  builtInRoles?: BuiltInRoles;
+  builtInRole: OrgRole;
+  builtInRoles: BuiltInRoles;
   options: Role[];
   appliedRoles: Role[];
   showGroups?: boolean;
   builtinRolesDisabled?: boolean;
-  showBuiltInRole?: boolean;
   onSelect: (roles: Role[]) => void;
   onBuiltInRoleSelect?: (role: OrgRole) => void;
-  onUpdate: (newRoles: string[], newBuiltInRole?: OrgRole) => void;
+  onUpdate: (newBuiltInRole: OrgRole, newRoles: string[]) => void;
   onClear?: () => void;
 }
 
@@ -50,14 +49,13 @@ export const RolePickerMenu = ({
   appliedRoles,
   showGroups,
   builtinRolesDisabled,
-  showBuiltInRole,
   onSelect,
   onBuiltInRoleSelect,
   onUpdate,
   onClear,
 }: RolePickerMenuProps): JSX.Element => {
   const [selectedOptions, setSelectedOptions] = useState<Role[]>(appliedRoles);
-  const [selectedBuiltInRole, setSelectedBuiltInRole] = useState<OrgRole | undefined>(builtInRole);
+  const [selectedBuiltInRole, setSelectedBuiltInRole] = useState<OrgRole>(builtInRole);
   const [showSubMenu, setShowSubMenu] = useState(false);
   const [openedMenuGroup, setOpenedMenuGroup] = useState('');
   const [subMenuOptions, setSubMenuOptions] = useState<Role[]>([]);
@@ -73,7 +71,7 @@ export const RolePickerMenu = ({
   }, [selectedOptions, onSelect]);
 
   useEffect(() => {
-    if (onBuiltInRoleSelect && selectedBuiltInRole) {
+    if (onBuiltInRoleSelect) {
       onBuiltInRoleSelect(selectedBuiltInRole);
     }
   }, [selectedBuiltInRole, onBuiltInRoleSelect]);
@@ -170,26 +168,24 @@ export const RolePickerMenu = ({
       const roleUID = selectedOptions[key]?.uid;
       selectedCustomRoles.push(roleUID);
     }
-    onUpdate(selectedCustomRoles, selectedBuiltInRole);
+    onUpdate(selectedBuiltInRole, selectedCustomRoles);
   };
 
   return (
     <div className={cx(styles.menu, customStyles.menuWrapper)}>
       <div className={customStyles.menu} aria-label="Role picker menu">
         <CustomScrollbar autoHide={false} autoHeightMax="300px" hideHorizontalTrack hideVerticalTrack>
-          {showBuiltInRole && (
-            <div className={customStyles.menuSection}>
-              <div className={customStyles.groupHeader}>Built-in roles</div>
-              <RadioButtonGroup
-                className={customStyles.builtInRoleSelector}
-                options={BuiltinRoleOption}
-                value={selectedBuiltInRole}
-                onChange={onSelectedBuiltinRoleChange}
-                fullWidth={true}
-                disabled={builtinRolesDisabled}
-              />
-            </div>
-          )}
+          <div className={customStyles.menuSection}>
+            <div className={customStyles.groupHeader}>Built-in roles</div>
+            <RadioButtonGroup
+              className={customStyles.builtInRoleSelector}
+              options={BuiltinRoleOption}
+              value={selectedBuiltInRole}
+              onChange={onSelectedBuiltinRoleChange}
+              fullWidth={true}
+              disabled={builtinRolesDisabled}
+            />
+          </div>
           {!!fixedRoles.length &&
             (showGroups && !!optionGroups.length ? (
               <div className={customStyles.menuSection}>

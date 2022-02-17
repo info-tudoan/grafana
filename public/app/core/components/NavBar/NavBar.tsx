@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { connect, ConnectedProps } from 'react-redux';
+import React, { FC, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { css, cx } from '@emotion/css';
 import { cloneDeep } from 'lodash';
@@ -8,14 +7,12 @@ import { Icon, IconName, useTheme2 } from '@grafana/ui';
 import { locationService } from '@grafana/runtime';
 import { Branding } from 'app/core/components/Branding/Branding';
 import config from 'app/core/config';
-import { getKioskMode } from 'app/core/navigation/kiosk';
-import { KioskMode, StoreState } from 'app/types';
+import { KioskMode } from 'app/types';
 import { enrichConfigItems, getActiveItem, isMatchOrChildMatch, isSearchActive, SEARCH_ITEM_ID } from './utils';
 import { OrgSwitcher } from '../OrgSwitcher';
 import NavBarItem from './NavBarItem';
 import { NavBarSection } from './NavBarSection';
 import { NavBarMenu } from './NavBarMenu';
-import { NavBarItemWithoutMenu } from './NavBarItemWithoutMenu';
 
 const homeUrl = config.appSubUrl || '/';
 
@@ -27,29 +24,19 @@ const searchItem: NavModelItem = {
   id: SEARCH_ITEM_ID,
   onClick: onOpenSearch,
   text: 'Search dashboards',
-  icon: 'search',
 };
 
-const mapStateToProps = (state: StoreState) => ({
-  navBarTree: state.navBarTree,
-});
-
-const mapDispatchToProps = {};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-export interface Props extends ConnectedProps<typeof connector> {}
-
-export const NavBarUnconnected = React.memo(({ navBarTree }: Props) => {
+export const NavBar: FC = React.memo(() => {
   const theme = useTheme2();
   const styles = getStyles(theme);
   const location = useLocation();
-  const kiosk = getKioskMode();
+  const query = new URLSearchParams(location.search);
+  const kiosk = query.get('kiosk') as KioskMode;
   const [showSwitcherModal, setShowSwitcherModal] = useState(false);
   const toggleSwitcherModal = () => {
     setShowSwitcherModal(!showSwitcherModal);
   };
-  const navTree = cloneDeep(navBarTree);
+  const navTree: NavModelItem[] = cloneDeep(config.bootData.navTree);
   const topItems = navTree.filter((item) => item.section === NavSection.Core);
   const bottomItems = enrichConfigItems(
     navTree.filter((item) => item.section === NavSection.Config),
@@ -60,7 +47,7 @@ export const NavBarUnconnected = React.memo(({ navBarTree }: Props) => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  if (kiosk !== KioskMode.Off) {
+  if (kiosk !== null) {
     return null;
   }
 
@@ -71,10 +58,15 @@ export const NavBarUnconnected = React.memo(({ navBarTree }: Props) => {
       </div>
 
       <NavBarSection>
-        <NavBarItemWithoutMenu label="Home" className={styles.grafanaLogo} url={homeUrl}>
+        <NavBarItem url={homeUrl} label="Home" className={styles.grafanaLogo} showMenu={false}>
           <Branding.MenuLogo />
-        </NavBarItemWithoutMenu>
-        <NavBarItem className={styles.search} isActive={activeItem === searchItem} link={searchItem}>
+        </NavBarItem>
+        <NavBarItem
+          className={styles.search}
+          isActive={activeItem === searchItem}
+          label={searchItem.text}
+          onClick={searchItem.onClick}
+        >
           <Icon name="search" size="xl" />
         </NavBarItem>
       </NavBarSection>
@@ -84,7 +76,10 @@ export const NavBarUnconnected = React.memo(({ navBarTree }: Props) => {
           <NavBarItem
             key={`${link.id}-${index}`}
             isActive={isMatchOrChildMatch(link, activeItem)}
-            link={{ ...link, subTitle: undefined, onClick: undefined }}
+            label={link.text}
+            menuItems={link.children}
+            target={link.target}
+            url={link.url}
           >
             {link.icon && <Icon name={link.icon as IconName} size="xl" />}
             {link.img && <img src={link.img} alt={`${link.text} logo`} />}
@@ -99,8 +94,13 @@ export const NavBarUnconnected = React.memo(({ navBarTree }: Props) => {
           <NavBarItem
             key={`${link.id}-${index}`}
             isActive={isMatchOrChildMatch(link, activeItem)}
+            label={link.text}
+            menuItems={link.children}
+            menuSubTitle={link.subTitle}
+            onClick={link.onClick}
             reverseMenuDirection
-            link={link}
+            target={link.target}
+            url={link.url}
           >
             {link.icon && <Icon name={link.icon as IconName} size="xl" />}
             {link.img && <img src={link.img} alt={`${link.text} logo`} />}
@@ -120,9 +120,7 @@ export const NavBarUnconnected = React.memo(({ navBarTree }: Props) => {
   );
 });
 
-NavBarUnconnected.displayName = 'NavBar';
-
-export const NavBar = connector(NavBarUnconnected);
+NavBar.displayName = 'NavBar';
 
 const getStyles = (theme: GrafanaTheme2) => ({
   search: css`

@@ -1,6 +1,6 @@
 import { isEmpty, isString, set } from 'lodash';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { dateTimeFormatTimeAgo, setWeekStart, TimeZone } from '@grafana/data';
+import { dateTimeFormat, dateTimeFormatTimeAgo, setWeekStart, TimeZone } from '@grafana/data';
 
 import { Team, ThunkResult, UserDTO, UserOrg, UserSession } from 'app/types';
 import config from 'app/core/config';
@@ -78,7 +78,7 @@ export const slice = createSlice({
         id: session.id,
         isActive: session.isActive,
         seenAt: dateTimeFormatTimeAgo(session.seenAt),
-        createdAt: session.createdAt,
+        createdAt: dateTimeFormat(session.createdAt, { format: 'MMMM DD, YYYY' }),
         clientIp: session.clientIp,
         browser: session.browser,
         browserVersion: session.browserVersion,

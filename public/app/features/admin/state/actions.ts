@@ -1,6 +1,6 @@
 import config from 'app/core/config';
-import { dateTimeFormatTimeAgo } from '@grafana/data';
-import { featureEnabled, getBackendSrv, locationService } from '@grafana/runtime';
+import { dateTimeFormat, dateTimeFormatTimeAgo } from '@grafana/data';
+import { getBackendSrv, locationService } from '@grafana/runtime';
 import { ThunkResult, LdapUser, UserSession, UserDTO, AccessControlAction, UserFilter } from 'app/types';
 
 import {
@@ -25,7 +25,7 @@ import {
 } from './reducers';
 import { debounce } from 'lodash';
 import { contextSrv } from 'app/core/core';
-import { accessControlQueryParam } from 'app/core/utils/accessControl';
+
 // UserAdminPage
 
 export function loadAdminUserPage(userId: number): ThunkResult<void> {
@@ -35,7 +35,7 @@ export function loadAdminUserPage(userId: number): ThunkResult<void> {
       await dispatch(loadUserProfile(userId));
       await dispatch(loadUserOrgs(userId));
       await dispatch(loadUserSessions(userId));
-      if (config.ldapEnabled && featureEnabled('ldapsync')) {
+      if (config.ldapEnabled && config.licenseInfo.hasLicense) {
         await dispatch(loadLdapSyncStatus());
       }
       dispatch(userAdminPageLoadedAction(true));
@@ -54,7 +54,7 @@ export function loadAdminUserPage(userId: number): ThunkResult<void> {
 
 export function loadUserProfile(userId: number): ThunkResult<void> {
   return async (dispatch) => {
-    const user = await getBackendSrv().get(`/api/users/${userId}`, accessControlQueryParam());
+    const user = await getBackendSrv().get(`/api/users/${userId}`);
     dispatch(userProfileLoadedAction(user));
   };
 }
@@ -144,13 +144,12 @@ export function loadUserSessions(userId: number): ThunkResult<void> {
 
     const tokens = await getBackendSrv().get(`/api/admin/users/${userId}/auth-tokens`);
     tokens.reverse();
-
     const sessions = tokens.map((session: UserSession) => {
       return {
         id: session.id,
         isActive: session.isActive,
         seenAt: dateTimeFormatTimeAgo(session.seenAt),
-        createdAt: session.createdAt,
+        createdAt: dateTimeFormat(session.createdAt, { format: 'MMMM DD, YYYY' }),
         clientIp: session.clientIp,
         browser: session.browser,
         browserVersion: session.browserVersion,
@@ -159,7 +158,6 @@ export function loadUserSessions(userId: number): ThunkResult<void> {
         device: session.device,
       };
     });
-
     dispatch(userSessionsLoadedAction(sessions));
   };
 }
@@ -185,7 +183,7 @@ export function loadLdapSyncStatus(): ThunkResult<void> {
   return async (dispatch) => {
     // Available only in enterprise
     const canReadLDAPStatus = contextSrv.hasPermission(AccessControlAction.LDAPStatusRead);
-    if (featureEnabled('ldapsync') && canReadLDAPStatus) {
+    if (config.licenseInfo.hasLicense && canReadLDAPStatus) {
       const syncStatus = await getBackendSrv().get(`/api/admin/ldap-sync-status`);
       dispatch(ldapSyncStatusLoadedAction(syncStatus));
     }

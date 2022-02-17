@@ -1,23 +1,13 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-
 import { createMockResourcePickerRows } from '../../__mocks__/resourcePickerRows';
+
 import NestedResourceTable from './NestedResourceTable';
 import { findRow } from './utils';
 
 describe('AzureMonitor NestedResourceTable', () => {
   const noop: any = () => {};
-
-  const getElementById = document.getElementById;
-  beforeEach(() => {
-    document.getElementById = jest.fn().mockReturnValue({
-      scrollIntoView: jest.fn(),
-    });
-  });
-  afterEach(() => {
-    document.getElementById = getElementById;
-  });
 
   it('renders subscriptions', () => {
     const rows = createMockResourcePickerRows();
@@ -46,7 +36,7 @@ describe('AzureMonitor NestedResourceTable', () => {
     expect(screen.getByText('web-server_DataDisk')).toBeInTheDocument();
   });
 
-  it("expands subscriptions when they're clicked", async () => {
+  it("expands resource groups when they're clicked", async () => {
     const rows = createMockResourcePickerRows();
     const promise = Promise.resolve();
     const requestNestedRows = jest.fn().mockReturnValue(promise);
@@ -59,20 +49,20 @@ describe('AzureMonitor NestedResourceTable', () => {
       />
     );
 
-    const expandButton = screen.getAllByLabelText('Expand')[1];
+    const expandButton = screen.getAllByLabelText('Expand')[2];
     userEvent.click(expandButton);
 
     expect(requestNestedRows).toBeCalledWith(
       expect.objectContaining({
-        id: '/subscriptions/def-456',
-        name: 'Dev Subscription',
-        typeLabel: 'Subscription',
+        id: '/subscriptions/def-456/resourceGroups/dev',
+        name: 'Development',
+        typeLabel: 'Resource Group',
       })
     );
 
-    expect(screen.queryByText('Development')).not.toBeInTheDocument();
     await act(() => promise);
-    expect(screen.getByText('Development')).toBeInTheDocument();
+
+    expect(screen.getByText('web-server')).toBeInTheDocument();
   });
 
   it('supports selecting variables', async () => {
@@ -89,7 +79,7 @@ describe('AzureMonitor NestedResourceTable', () => {
       />
     );
 
-    const expandButton = screen.getAllByLabelText('Expand')[2];
+    const expandButton = screen.getAllByLabelText('Expand')[5];
     userEvent.click(expandButton);
 
     await act(() => promise);

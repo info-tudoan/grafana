@@ -5,6 +5,8 @@ import { DataFrame, DataFrameJSON, DataQueryError } from '@grafana/data';
 
 type Result = { frames: DataFrameJSON[]; error?: string };
 
+const defaultTimeout = 30_000;
+
 /**
  * A retry strategy specifically for cloud watch logs query. Cloud watch logs queries need first starting the query
  * and the polling for the results. The start query can fail because of the concurrent queries rate limit,
@@ -21,7 +23,11 @@ type Result = { frames: DataFrameJSON[]; error?: string };
 export function runWithRetry(
   queryFun: (targets: StartQueryRequest[]) => Observable<DataFrame[]>,
   targets: StartQueryRequest[],
-  timeoutFunc: (retry: number, startTime: number) => boolean
+  options: {
+    timeout?: number;
+    timeoutFunc?: (retry: number, startTime: number) => boolean;
+    retryWaitFunc?: (retry: number) => number;
+  } = {}
 ): Observable<{ frames: DataFrame[]; error?: DataQueryError }> {
   const startTime = new Date();
   let retries = 0;
@@ -29,9 +35,17 @@ export function runWithRetry(
   let subscription: Subscription;
   let collected = {};
 
-  const retryWaitFunction = (retry: number) => {
-    return Math.pow(2, retry) * 1000 + Math.random() * 100;
-  };
+  const timeoutFunction = options.timeoutFunc
+    ? options.timeoutFunc
+    : (retry: number, startTime: number) => {
+        return Date.now() >= startTime + (options.timeout === undefined ? defaultTimeout : options.timeout);
+      };
+
+  const retryWaitFunction = options.retryWaitFunc
+    ? options.retryWaitFunc
+    : (retry: number) => {
+        return Math.pow(2, retry) * 1000 + Math.random() * 100;
+      };
 
   return new Observable((observer) => {
     // Run function is where the logic takes place. We have it in a function so we can call it recursively.
@@ -68,7 +82,7 @@ export function runWithRetry(
             return;
           }
 
-          if (timeoutFunc(retries, startTime.valueOf())) {
+          if (timeoutFunction(retries, startTime.valueOf())) {
             // We timed out but we could have started some queries
             if (Object.keys(collected).length || Object.keys(errorData.good).length) {
               const dataResponse = toDataQueryResponse({

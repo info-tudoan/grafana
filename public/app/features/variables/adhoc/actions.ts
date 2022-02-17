@@ -3,7 +3,7 @@ import { StoreState, ThunkResult } from 'app/types';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 import { changeVariableEditorExtended } from '../editor/reducer';
 import { addVariable, changeVariableProp } from '../state/sharedReducer';
-import { getNewVariableIndex, getVariable } from '../state/selectors';
+import { getNewVariabelIndex, getVariable } from '../state/selectors';
 import { AddVariable, toVariableIdentifier, toVariablePayload, VariableIdentifier } from '../state/types';
 import {
   AdHocVariabelFilterUpdate,
@@ -17,7 +17,6 @@ import { AdHocVariableFilter, AdHocVariableModel } from 'app/features/variables/
 import { variableUpdated } from '../state/actions';
 import { isAdHoc } from '../guard';
 import { DataSourceRef, getDataSourceRef } from '@grafana/data';
-import { getAdhocVariableEditorState } from '../editor/selectors';
 
 export interface AdHocTableOptions {
   datasource: DataSourceRef;
@@ -31,6 +30,7 @@ const filterTableName = 'Filters';
 export const applyFilterFromTable = (options: AdHocTableOptions): ThunkResult<void> => {
   return async (dispatch, getState) => {
     let variable = getVariableByOptions(options, getState());
+    console.log('getVariableByOptions', options, getState().templating.variables);
 
     if (!variable) {
       dispatch(createAdHocVariable(options));
@@ -85,28 +85,33 @@ export const setFiltersFromUrl = (id: string, filters: AdHocVariableFilter[]): T
 export const changeVariableDatasource = (datasource?: DataSourceRef): ThunkResult<void> => {
   return async (dispatch, getState) => {
     const { editor } = getState().templating;
-    const extended = getAdhocVariableEditorState(editor);
     const variable = getVariable(editor.id, getState());
+
+    const loadingText = 'Ad hoc filters are applied automatically to all queries that target this data source';
+
+    dispatch(
+      changeVariableEditorExtended({
+        propName: 'infoText',
+        propValue: loadingText,
+      })
+    );
     dispatch(changeVariableProp(toVariablePayload(variable, { propName: 'datasource', propValue: datasource })));
 
     const ds = await getDatasourceSrv().get(datasource);
 
-    // TS TODO: ds is not typed to be optional - is this check unnecessary or is the type incorrect?
-    const message = ds?.getTagKeys
-      ? 'Ad hoc filters are applied automatically to all queries that target this data source'
-      : 'This data source does not support ad hoc filters yet.';
-
-    dispatch(
-      changeVariableEditorExtended({
-        infoText: message,
-        dataSources: extended?.dataSources ?? [],
-      })
-    );
+    if (!ds || !ds.getTagKeys) {
+      dispatch(
+        changeVariableEditorExtended({
+          propName: 'infoText',
+          propValue: 'This data source does not support ad hoc filters yet.',
+        })
+      );
+    }
   };
 };
 
 export const initAdHocVariableEditor = (): ThunkResult<void> => (dispatch) => {
-  const dataSources = getDatasourceSrv().getList({ metrics: true, variables: true });
+  const dataSources = getDatasourceSrv().getList({ metrics: true, variables: false });
   const selectable = dataSources.reduce(
     (all: Array<{ text: string; value: DataSourceRef | null }>, ds) => {
       if (ds.meta.mixed) {
@@ -124,7 +129,8 @@ export const initAdHocVariableEditor = (): ThunkResult<void> => (dispatch) => {
 
   dispatch(
     changeVariableEditorExtended({
-      dataSources: selectable,
+      propName: 'dataSources',
+      propValue: selectable,
     })
   );
 };
@@ -139,10 +145,14 @@ const createAdHocVariable = (options: AdHocTableOptions): ThunkResult<void> => {
     };
 
     const global = false;
-    const index = getNewVariableIndex(getState());
+    const index = getNewVariabelIndex(getState());
     const identifier: VariableIdentifier = { type: 'adhoc', id: model.id };
 
-    dispatch(addVariable(toVariablePayload<AddVariable>(identifier, { global, model, index })));
+    dispatch(
+      addVariable(
+        toVariablePayload<AddVariable>(identifier, { global, model, index })
+      )
+    );
   };
 };
 

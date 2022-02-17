@@ -1,5 +1,6 @@
 import React from 'react';
-import { FieldSet, InlineField, Input, Select, InlineSwitch } from '@grafana/ui';
+import { EventsWithValidation, regexValidation, LegacyForms } from '@grafana/ui';
+const { Switch, Select, Input, FormField } = LegacyForms;
 import { ElasticsearchOptions, Interval } from '../types';
 import { DataSourceSettings, SelectableValue } from '@grafana/data';
 import { gte, lt, valid } from 'semver';
@@ -44,190 +45,219 @@ export const ElasticDetails = ({ value, onChange }: Props) => {
       : undefined;
   return (
     <>
-      <FieldSet label="Elasticsearch details">
-        <InlineField label="Index name" labelWidth={26}>
-          <Input
-            id="es_config_indexName"
-            value={value.database || ''}
-            onChange={changeHandler('database', value, onChange)}
-            width={24}
-            placeholder="es-index-name"
-            required
-          />
-        </InlineField>
+      <h3 className="page-heading">Elasticsearch details</h3>
 
-        <InlineField label="Pattern" labelWidth={26}>
-          <Select
-            inputId="es_config_indexPattern"
-            value={indexPatternTypes.find(
-              (pattern) => pattern.value === (value.jsonData.interval === undefined ? 'none' : value.jsonData.interval)
-            )}
-            options={indexPatternTypes}
-            onChange={intervalHandler(value, onChange)}
-            width={24}
-            menuShouldPortal
-          />
-        </InlineField>
+      <div className="gf-form-group">
+        <div className="gf-form-inline">
+          <div className="gf-form">
+            <FormField
+              labelWidth={10}
+              inputWidth={15}
+              label="Index name"
+              value={value.database || ''}
+              onChange={changeHandler('database', value, onChange)}
+              placeholder={'es-index-name'}
+              required
+            />
+          </div>
 
-        <InlineField label="Time field name" labelWidth={26}>
-          <Input
-            id="es_config_timeField"
+          <div className="gf-form">
+            <FormField
+              labelWidth={10}
+              label="Pattern"
+              inputEl={
+                <Select
+                  menuShouldPortal
+                  options={indexPatternTypes}
+                  onChange={intervalHandler(value, onChange)}
+                  value={indexPatternTypes.find(
+                    (pattern) =>
+                      pattern.value === (value.jsonData.interval === undefined ? 'none' : value.jsonData.interval)
+                  )}
+                />
+              }
+            />
+          </div>
+        </div>
+
+        <div className="gf-form max-width-25">
+          <FormField
+            labelWidth={10}
+            inputWidth={15}
+            label="Time field name"
             value={value.jsonData.timeField || ''}
             onChange={jsonDataChangeHandler('timeField', value, onChange)}
-            width={24}
-            placeholder="@timestamp"
             required
           />
-        </InlineField>
+        </div>
 
-        <InlineField label="ElasticSearch version" labelWidth={26}>
-          <Select
-            inputId="es_config_version"
-            options={[customOption, ...esVersions].filter(isTruthy)}
-            onChange={(option) => {
-              const maxConcurrentShardRequests = getMaxConcurrenShardRequestOrDefault(
-                value.jsonData.maxConcurrentShardRequests,
-                option.value!
-              );
-              onChange({
-                ...value,
-                jsonData: {
-                  ...value.jsonData,
-                  esVersion: option.value!,
-                  maxConcurrentShardRequests,
-                },
-              });
-            }}
-            value={currentVersion || customOption}
-            width={24}
-            menuShouldPortal
+        <div className="gf-form">
+          <FormField
+            labelWidth={10}
+            label="Version"
+            inputEl={
+              <Select
+                menuShouldPortal
+                options={[customOption, ...esVersions].filter(isTruthy)}
+                onChange={(option) => {
+                  const maxConcurrentShardRequests = getMaxConcurrenShardRequestOrDefault(
+                    value.jsonData.maxConcurrentShardRequests,
+                    option.value!
+                  );
+                  onChange({
+                    ...value,
+                    jsonData: {
+                      ...value.jsonData,
+                      esVersion: option.value!,
+                      maxConcurrentShardRequests,
+                    },
+                  });
+                }}
+                value={currentVersion || customOption}
+              />
+            }
           />
-        </InlineField>
-
+        </div>
         {gte(value.jsonData.esVersion, '5.6.0') && (
-          <InlineField label="Max concurrent Shard Requests" labelWidth={26}>
-            <Input
-              id="es_config_shardRequests"
+          <div className="gf-form max-width-30">
+            <FormField
+              aria-label={'Max concurrent Shard Requests input'}
+              labelWidth={15}
+              label="Max concurrent Shard Requests"
               value={value.jsonData.maxConcurrentShardRequests || ''}
               onChange={jsonDataChangeHandler('maxConcurrentShardRequests', value, onChange)}
-              width={24}
             />
-          </InlineField>
+          </div>
         )}
-
-        <InlineField
-          label="Min time interval"
-          labelWidth={26}
-          tooltip={
-            <>
-              A lower limit for the auto group by time interval. Recommended to be set to write frequency, for example{' '}
-              <code>1m</code> if your data is written every minute.
-            </>
-          }
-          error="Value is not valid, you can use number with time unit specifier: y, M, w, d, h, m, s"
-          invalid={!!value.jsonData.timeInterval && !/^\d+(ms|[Mwdhmsy])$/.test(value.jsonData.timeInterval)}
-        >
-          <Input
-            id="es_config_minTimeInterval"
-            value={value.jsonData.timeInterval || ''}
-            onChange={jsonDataChangeHandler('timeInterval', value, onChange)}
-            width={24}
-            placeholder="10s"
-          />
-        </InlineField>
-
-        <InlineField label="X-Pack enabled" labelWidth={26}>
-          <InlineSwitch
-            id="es_config_xpackEnabled"
+        <div className="gf-form-inline">
+          <div className="gf-form">
+            <FormField
+              labelWidth={10}
+              label="Min time interval"
+              inputEl={
+                <Input
+                  className={'width-6'}
+                  value={value.jsonData.timeInterval || ''}
+                  onChange={jsonDataChangeHandler('timeInterval', value, onChange)}
+                  placeholder="10s"
+                  validationEvents={{
+                    [EventsWithValidation.onBlur]: [
+                      regexValidation(
+                        /^\d+(ms|[Mwdhmsy])$/,
+                        'Value is not valid, you can use number with time unit specifier: y, M, w, d, h, m, s'
+                      ),
+                    ],
+                  }}
+                />
+              }
+              tooltip={
+                <>
+                  A lower limit for the auto group by time interval. Recommended to be set to write frequency, for
+                  example <code>1m</code> if your data is written every minute.
+                </>
+              }
+            />
+          </div>
+        </div>
+        <div className="gf-form-inline">
+          <Switch
+            label="X-Pack enabled"
+            labelClass="width-10"
             checked={value.jsonData.xpack || false}
             onChange={jsonDataSwitchChangeHandler('xpack', value, onChange)}
           />
-        </InlineField>
+        </div>
 
         {gte(value.jsonData.esVersion, '6.6.0') && value.jsonData.xpack && (
-          <InlineField label="Include Frozen Indices" labelWidth={26}>
-            <InlineSwitch
-              id="es_config_frozenIndices"
+          <div className="gf-form-inline">
+            <Switch
+              label="Include frozen indices"
+              labelClass="width-10"
               checked={value.jsonData.includeFrozen ?? false}
               onChange={jsonDataSwitchChangeHandler('includeFrozen', value, onChange)}
             />
-          </InlineField>
+          </div>
         )}
-      </FieldSet>
+      </div>
     </>
   );
 };
 
 // TODO: Use change handlers from @grafana/data
-const changeHandler =
-  (key: keyof DataSourceSettings<ElasticsearchOptions>, value: Props['value'], onChange: Props['onChange']) =>
-  (event: React.SyntheticEvent<HTMLInputElement | HTMLSelectElement>) => {
-    onChange({
-      ...value,
-      [key]: event.currentTarget.value,
-    });
-  };
+const changeHandler = (
+  key: keyof DataSourceSettings<ElasticsearchOptions>,
+  value: Props['value'],
+  onChange: Props['onChange']
+) => (event: React.SyntheticEvent<HTMLInputElement | HTMLSelectElement>) => {
+  onChange({
+    ...value,
+    [key]: event.currentTarget.value,
+  });
+};
 
 // TODO: Use change handlers from @grafana/data
-const jsonDataChangeHandler =
-  (key: keyof ElasticsearchOptions, value: Props['value'], onChange: Props['onChange']) =>
-  (event: React.SyntheticEvent<HTMLInputElement | HTMLSelectElement>) => {
-    onChange({
-      ...value,
-      jsonData: {
-        ...value.jsonData,
-        [key]: event.currentTarget.value,
-      },
-    });
-  };
+const jsonDataChangeHandler = (key: keyof ElasticsearchOptions, value: Props['value'], onChange: Props['onChange']) => (
+  event: React.SyntheticEvent<HTMLInputElement | HTMLSelectElement>
+) => {
+  onChange({
+    ...value,
+    jsonData: {
+      ...value.jsonData,
+      [key]: event.currentTarget.value,
+    },
+  });
+};
 
-const jsonDataSwitchChangeHandler =
-  (key: keyof ElasticsearchOptions, value: Props['value'], onChange: Props['onChange']) =>
-  (event: React.SyntheticEvent<HTMLInputElement>) => {
-    onChange({
-      ...value,
-      jsonData: {
-        ...value.jsonData,
-        [key]: event.currentTarget.checked,
-      },
-    });
-  };
+const jsonDataSwitchChangeHandler = (
+  key: keyof ElasticsearchOptions,
+  value: Props['value'],
+  onChange: Props['onChange']
+) => (event: React.SyntheticEvent<HTMLInputElement>) => {
+  onChange({
+    ...value,
+    jsonData: {
+      ...value.jsonData,
+      [key]: event.currentTarget.checked,
+    },
+  });
+};
 
-const intervalHandler =
-  (value: Props['value'], onChange: Props['onChange']) => (option: SelectableValue<Interval | 'none'>) => {
-    const { database } = value;
-    // If option value is undefined it will send its label instead so we have to convert made up value to undefined here.
-    const newInterval = option.value === 'none' ? undefined : option.value;
+const intervalHandler = (value: Props['value'], onChange: Props['onChange']) => (
+  option: SelectableValue<Interval | 'none'>
+) => {
+  const { database } = value;
+  // If option value is undefined it will send its label instead so we have to convert made up value to undefined here.
+  const newInterval = option.value === 'none' ? undefined : option.value;
 
-    if (!database || database.length === 0 || database.startsWith('[logstash-]')) {
-      let newDatabase = '';
+  if (!database || database.length === 0 || database.startsWith('[logstash-]')) {
+    let newDatabase = '';
 
-      if (newInterval !== undefined) {
-        const pattern = indexPatternTypes.find((pattern) => pattern.value === newInterval);
+    if (newInterval !== undefined) {
+      const pattern = indexPatternTypes.find((pattern) => pattern.value === newInterval);
 
-        if (pattern) {
-          newDatabase = pattern.example ?? '';
-        }
+      if (pattern) {
+        newDatabase = pattern.example ?? '';
       }
-
-      onChange({
-        ...value,
-        database: newDatabase,
-        jsonData: {
-          ...value.jsonData,
-          interval: newInterval,
-        },
-      });
-    } else {
-      onChange({
-        ...value,
-        jsonData: {
-          ...value.jsonData,
-          interval: newInterval,
-        },
-      });
     }
-  };
+
+    onChange({
+      ...value,
+      database: newDatabase,
+      jsonData: {
+        ...value.jsonData,
+        interval: newInterval,
+      },
+    });
+  } else {
+    onChange({
+      ...value,
+      jsonData: {
+        ...value.jsonData,
+        interval: newInterval,
+      },
+    });
+  }
+};
 
 function getMaxConcurrenShardRequestOrDefault(maxConcurrentShardRequests: number | undefined, version: string): number {
   if (maxConcurrentShardRequests === 5 && lt(version, '7.0.0')) {

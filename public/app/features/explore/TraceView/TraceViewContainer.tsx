@@ -8,19 +8,13 @@ interface Props {
   dataFrames: DataFrame[];
   splitOpenFn: SplitOpen;
   exploreId: ExploreId;
-  scrollElement?: Element;
 }
 export function TraceViewContainer(props: Props) {
-  const { dataFrames, splitOpenFn, exploreId, scrollElement } = props;
+  const { dataFrames, splitOpenFn, exploreId } = props;
 
   return (
     <Collapse label="Trace View" isOpen>
-      <TraceView
-        exploreId={exploreId}
-        dataFrames={dataFrames}
-        splitOpenFn={splitOpenFn}
-        scrollElement={scrollElement}
-      />
+      <TraceView exploreId={exploreId} dataFrames={dataFrames} splitOpenFn={splitOpenFn} />
     </Collapse>
   );
 }

@@ -14,7 +14,6 @@ export const QueryStep: FC = () => {
   } = useFormContext<RuleFormValues>();
   const type = watch('type');
   const dataSourceName = watch('dataSourceName');
-
   return (
     <RuleEditorSection
       stepNo={2}

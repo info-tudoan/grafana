@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Prompt } from 'react-router-dom';
 import { DashboardModel } from '../../state/DashboardModel';
 import { each, filter, find } from 'lodash';
+import angular from 'angular';
 import { UnsavedChangesModal } from '../SaveDashboard/UnsavedChangesModal';
 import * as H from 'history';
 import { SaveLibraryPanelModal } from 'app/features/library-panels/components/SaveLibraryPanelModal/SaveLibraryPanelModal';
@@ -154,8 +155,6 @@ export const DashboardPrompt = React.memo(({ dashboard }: Props) => {
   );
 });
 
-DashboardPrompt.displayName = 'DashboardPrompt';
-
 function moveToBlockedLocationAfterReactStateUpdate(location?: H.Location | null) {
   if (location) {
     setTimeout(() => locationService.push(location!), 10);
@@ -247,8 +246,8 @@ export function hasChanges(current: DashboardModel, original: any) {
     currentTimepicker.now = originalTimepicker.now;
   }
 
-  const currentJson = JSON.stringify(currentClean, null);
-  const originalJson = JSON.stringify(originalClean, null);
+  const currentJson = angular.toJson(currentClean);
+  const originalJson = angular.toJson(originalClean);
 
   return currentJson !== originalJson;
 }

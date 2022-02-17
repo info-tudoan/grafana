@@ -3,7 +3,7 @@ import { connect, ConnectedProps } from 'react-redux';
 import { css, cx } from '@emotion/css';
 import { stylesFactory, useTheme, TextArea, Button, IconButton } from '@grafana/ui';
 import { getDataSourceSrv } from '@grafana/runtime';
-import { GrafanaTheme, DataSourceApi, DataQuery } from '@grafana/data';
+import { GrafanaTheme, DataSourceApi } from '@grafana/data';
 import { RichHistoryQuery, ExploreId } from 'app/types/explore';
 import { createUrlFromRichHistory, createQueryText } from 'app/core/utils/richHistory';
 import { createAndCopyShortLink } from 'app/core/utils/shortLinks';
@@ -14,7 +14,7 @@ import { notifyApp } from 'app/core/actions';
 import { createSuccessNotification } from 'app/core/copy/appNotification';
 import { StoreState } from 'app/types';
 
-import { starHistoryItem, commentHistoryItem, deleteHistoryItem } from '../state/history';
+import { updateRichHistory } from '../state/history';
 import { changeDatasource } from '../state/datasource';
 import { setQueries } from '../state/query';
 import { ShowConfirmModalEvent } from '../../../types/events';
@@ -30,21 +30,19 @@ function mapStateToProps(state: StoreState, { exploreId }: { exploreId: ExploreI
 
 const mapDispatchToProps = {
   changeDatasource,
-  deleteHistoryItem,
-  commentHistoryItem,
-  starHistoryItem,
+  updateRichHistory,
   setQueries,
 };
 
 const connector = connect(mapStateToProps, mapDispatchToProps);
 
-interface OwnProps<T extends DataQuery = DataQuery> {
-  query: RichHistoryQuery<T>;
+interface OwnProps {
+  query: RichHistoryQuery;
   dsImg: string;
   isRemoved: boolean;
 }
 
-export type Props<T extends DataQuery = DataQuery> = ConnectedProps<typeof connector> & OwnProps<T>;
+export type Props = ConnectedProps<typeof connector> & OwnProps;
 
 const getStyles = stylesFactory((theme: GrafanaTheme, isRemoved: boolean) => {
   /* Hard-coded value so all buttons and icons on right side of card are aligned */
@@ -149,9 +147,7 @@ export function RichHistoryCard(props: Props) {
     query,
     dsImg,
     isRemoved,
-    commentHistoryItem,
-    starHistoryItem,
-    deleteHistoryItem,
+    updateRichHistory,
     changeDatasource,
     exploreId,
     datasourceInstance,
@@ -204,25 +200,25 @@ export function RichHistoryCard(props: Props) {
           yesText: 'Delete',
           icon: 'trash-alt',
           onConfirm: () => {
-            deleteHistoryItem(query.id);
+            updateRichHistory(query.ts, 'delete');
             dispatch(notifyApp(createSuccessNotification('Query deleted')));
           },
         })
       );
     } else {
-      deleteHistoryItem(query.id);
+      updateRichHistory(query.ts, 'delete');
       dispatch(notifyApp(createSuccessNotification('Query deleted')));
     }
   };
 
   const onStarrQuery = () => {
-    starHistoryItem(query.id, !query.starred);
+    updateRichHistory(query.ts, 'starred');
   };
 
   const toggleActiveUpdateComment = () => setActiveUpdateComment(!activeUpdateComment);
 
   const onUpdateComment = () => {
-    commentHistoryItem(query.id, comment);
+    updateRichHistory(query.ts, 'comment', comment);
     setActiveUpdateComment(false);
   };
 

@@ -133,7 +133,7 @@ export class VariableEditorEditorUnConnected extends PureComponent<Props> {
                   name="Name"
                   placeholder="name"
                   required
-                  testId={selectors.pages.Dashboard.Settings.Variables.Edit.General.generalNameInputV2}
+                  ariaLabel={selectors.pages.Dashboard.Settings.Variables.Edit.General.generalNameInput}
                 />
                 <VariableTypeSelect onChange={this.onTypeChange} type={this.props.variable.type} />
               </InlineFieldRow>
@@ -150,7 +150,7 @@ export class VariableEditorEditorUnConnected extends PureComponent<Props> {
                   onChange={this.onLabelChange}
                   name="Label"
                   placeholder="optional display name"
-                  testId={selectors.pages.Dashboard.Settings.Variables.Edit.General.generalLabelInputV2}
+                  ariaLabel={selectors.pages.Dashboard.Settings.Variables.Edit.General.generalLabelInput}
                 />
                 <VariableHideSelect
                   onChange={this.onHideChange}

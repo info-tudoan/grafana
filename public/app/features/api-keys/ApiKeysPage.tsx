@@ -3,8 +3,8 @@ import { connect, ConnectedProps } from 'react-redux';
 // Utils
 import { ApiKey, NewApiKey, StoreState } from 'app/types';
 import { getNavModel } from 'app/core/selectors/navModel';
-import { getApiKeys, getApiKeysCount, getIncludeExpired, getIncludeExpiredDisabled } from './state/selectors';
-import { addApiKey, deleteApiKey, loadApiKeys, toggleIncludeExpired } from './state/actions';
+import { getApiKeys, getApiKeysCount } from './state/selectors';
+import { addApiKey, deleteApiKey, loadApiKeys } from './state/actions';
 import Page from 'app/core/components/Page/Page';
 import { ApiKeysAddedModal } from './ApiKeysAddedModal';
 import config from 'app/core/config';
@@ -28,8 +28,6 @@ function mapStateToProps(state: StoreState) {
     apiKeysCount: getApiKeysCount(state.apiKeys),
     hasFetched: state.apiKeys.hasFetched,
     timeZone: getTimeZone(state.user),
-    includeExpired: getIncludeExpired(state.apiKeys),
-    includeExpiredDisabled: getIncludeExpiredDisabled(state.apiKeys),
   };
 }
 
@@ -37,7 +35,6 @@ const mapDispatchToProps = {
   loadApiKeys,
   deleteApiKey,
   setSearchQuery,
-  toggleIncludeExpired,
   addApiKey,
 };
 
@@ -48,12 +45,14 @@ interface OwnProps {}
 export type Props = OwnProps & ConnectedProps<typeof connector>;
 
 interface State {
-  isAdding: boolean;
+  includeExpired: boolean;
+  hasFetched: boolean;
 }
 
 export class ApiKeysPageUnconnected extends PureComponent<Props, State> {
   constructor(props: Props) {
     super(props);
+    this.state = { includeExpired: false, hasFetched: false };
   }
 
   componentDidMount() {
@@ -61,11 +60,11 @@ export class ApiKeysPageUnconnected extends PureComponent<Props, State> {
   }
 
   async fetchApiKeys() {
-    await this.props.loadApiKeys();
+    await this.props.loadApiKeys(this.state.includeExpired);
   }
 
   onDeleteApiKey = (key: ApiKey) => {
-    this.props.deleteApiKey(key.id!);
+    this.props.deleteApiKey(key.id!, this.state.includeExpired);
   };
 
   onSearchQueryChange = (value: string) => {
@@ -73,7 +72,7 @@ export class ApiKeysPageUnconnected extends PureComponent<Props, State> {
   };
 
   onIncludeExpiredChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
-    this.props.toggleIncludeExpired();
+    this.setState({ hasFetched: false, includeExpired: event.currentTarget.checked }, this.fetchApiKeys);
   };
 
   onAddApiKey = (newApiKey: NewApiKey) => {
@@ -98,7 +97,7 @@ export class ApiKeysPageUnconnected extends PureComponent<Props, State> {
         ...newApiKey,
         secondsToLive: secondsToLiveAsNumber,
       };
-      this.props.addApiKey(apiKey, openModal);
+      this.props.addApiKey(apiKey, openModal, this.state.includeExpired);
       this.setState((prevState: State) => {
         return {
           ...prevState,
@@ -111,16 +110,8 @@ export class ApiKeysPageUnconnected extends PureComponent<Props, State> {
   };
 
   render() {
-    const {
-      hasFetched,
-      navModel,
-      apiKeysCount,
-      apiKeys,
-      searchQuery,
-      timeZone,
-      includeExpired,
-      includeExpiredDisabled,
-    } = this.props;
+    const { hasFetched, navModel, apiKeysCount, apiKeys, searchQuery, timeZone } = this.props;
+    const { includeExpired } = this.state;
 
     if (!hasFetched) {
       return (
@@ -159,7 +150,7 @@ export class ApiKeysPageUnconnected extends PureComponent<Props, State> {
                   <ApiKeysForm show={isAdding} onClose={toggleIsAdding} onKeyAdded={this.onAddApiKey} />
                   {showTable ? (
                     <VerticalGroup>
-                      <InlineField disabled={includeExpiredDisabled} label="Include expired keys">
+                      <InlineField label="Show expired">
                         <InlineSwitch id="showExpired" value={includeExpired} onChange={this.onIncludeExpiredChange} />
                       </InlineField>
                       <ApiKeysTable apiKeys={apiKeys} timeZone={timeZone} onDelete={this.onDeleteApiKey} />

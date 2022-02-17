@@ -68,7 +68,7 @@ export const SelectionOptionsEditor: FunctionComponent<SelectionOptionsEditorPro
             onChange={onAllValueChanged}
             name="Custom all value"
             placeholder="blank = auto"
-            testId={selectors.pages.Dashboard.Settings.Variables.Edit.General.selectionOptionsCustomAllInputV2}
+            ariaLabel={selectors.pages.Dashboard.Settings.Variables.Edit.General.selectionOptionsCustomAllInput}
             labelWidth={20}
           />
         </InlineFieldRow>

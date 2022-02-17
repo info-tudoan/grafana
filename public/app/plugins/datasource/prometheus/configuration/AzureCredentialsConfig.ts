@@ -18,25 +18,16 @@ function getSecret(options: DataSourceSettings<any, any>): undefined | string | 
   }
 }
 
-export function hasCredentials(options: DataSourceSettings<any, any>): boolean {
-  return !!options.jsonData.azureCredentials;
-}
-
-export function getDefaultCredentials(): AzureCredentials {
-  if (config.azure.managedIdentityEnabled) {
-    return { authType: 'msi' };
-  } else {
-    return { authType: 'clientsecret', azureCloud: getDefaultAzureCloud() };
-  }
-}
-
 export function getCredentials(options: DataSourceSettings<any, any>): AzureCredentials {
   const credentials = options.jsonData.azureCredentials as AzureCredentials | undefined;
 
   // If no credentials saved, then return empty credentials
   // of type based on whether the managed identity enabled
   if (!credentials) {
-    return getDefaultCredentials();
+    return {
+      authType: config.azure.managedIdentityEnabled ? 'msi' : 'clientsecret',
+      azureCloud: getDefaultAzureCloud(),
+    };
   }
 
   switch (credentials.authType) {
@@ -113,24 +104,4 @@ export function updateCredentials(
 
       return options;
   }
-}
-
-export function setDefaultCredentials(options: DataSourceSettings<any, any>): Partial<DataSourceSettings<any, any>> {
-  return {
-    jsonData: {
-      ...options.jsonData,
-      azureCredentials: getDefaultCredentials(),
-    },
-  };
-}
-
-export function resetCredentials(options: DataSourceSettings<any, any>): Partial<DataSourceSettings<any, any>> {
-  return {
-    jsonData: {
-      ...options.jsonData,
-      azureAuth: undefined,
-      azureCredentials: undefined,
-      azureEndpointResourceId: undefined,
-    },
-  };
 }

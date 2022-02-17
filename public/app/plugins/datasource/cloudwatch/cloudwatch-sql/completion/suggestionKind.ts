@@ -1,4 +1,4 @@
-import { StatementPosition, SuggestionKind } from '../../monarch/types';
+import { StatementPosition, SuggestionKind } from './types';
 
 export function getSuggestionKinds(statementPosition: StatementPosition): SuggestionKind[] {
   switch (statementPosition) {

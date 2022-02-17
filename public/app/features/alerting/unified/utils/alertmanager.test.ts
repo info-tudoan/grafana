@@ -1,6 +1,6 @@
-import { Matcher, MatcherOperator, Route } from 'app/plugins/datasource/alertmanager/types';
+import { Matcher } from 'app/plugins/datasource/alertmanager/types';
 import { Labels } from 'app/types/unified-alerting-dto';
-import { parseMatcher, parseMatchers, labelsMatchMatchers, removeMuteTimingFromRoute } from './alertmanager';
+import { parseMatcher, parseMatchers, stringifyMatcher, labelsMatchMatchers } from './alertmanager';
 
 describe('Alertmanager utils', () => {
   describe('parseMatcher', () => {
@@ -31,23 +31,16 @@ describe('Alertmanager utils', () => {
       });
     });
 
-    // Alertmanager has some strict requirements for label values;
-    // we should not automatically encode or decode any values sent
-    // and instead let AM return any errors like (matcher value contains unescaped double quote: bar"baz")
-    // and allow the user to update the values to the correct format
-    //
-    // see https://github.com/prometheus/alertmanager/blob/4030e3670b359b8814aa8340ea1144f32b1f5ab3/pkg/labels/parse.go#L55-L99
-    // and https://github.com/prometheus/alertmanager/blob/4030e3670b359b8814aa8340ea1144f32b1f5ab3/pkg/labels/parse.go#L101-L178
-    it('should not parse escaped values', () => {
-      expect(parseMatcher('foo="^[a-z0-9-]{1}[a-z0-9-]{0,30}$"')).toEqual<Matcher>({
+    it('should parse escaped values correctly', () => {
+      expect(parseMatcher('foo=~"bar\\"baz\\""')).toEqual<Matcher>({
         name: 'foo',
-        value: '"^[a-z0-9-]{1}[a-z0-9-]{0,30}$"',
-        isRegex: false,
+        value: 'bar"baz"',
+        isRegex: true,
         isEqual: true,
       });
       expect(parseMatcher('foo=~bar\\"baz\\"')).toEqual<Matcher>({
         name: 'foo',
-        value: 'bar\\"baz\\"',
+        value: 'bar"baz"',
         isRegex: true,
         isEqual: true,
       });
@@ -59,6 +52,19 @@ describe('Alertmanager utils', () => {
         isRegex: true,
         isEqual: true,
       });
+    });
+  });
+
+  describe('stringifyMatcher', () => {
+    it('should stringify matcher correctly', () => {
+      expect(
+        stringifyMatcher({
+          name: 'foo',
+          value: 'boo="bar"',
+          isRegex: true,
+          isEqual: false,
+        })
+      ).toEqual('foo!~"boo=\\"bar\\""');
     });
   });
 
@@ -80,13 +86,6 @@ describe('Alertmanager utils', () => {
       expect(parseMatchers('foo="bar",bar=bazz')).toEqual<Matcher[]>([
         { name: 'foo', value: 'bar', isRegex: false, isEqual: true },
         { name: 'bar', value: 'bazz', isEqual: true, isRegex: false },
-      ]);
-    });
-
-    it('should parse matchers for key with special characters', () => {
-      expect(parseMatchers('foo.bar-baz="bar",baz-bar.foo=bazz')).toEqual<Matcher[]>([
-        { name: 'foo.bar-baz', value: 'bar', isRegex: false, isEqual: true },
-        { name: 'baz-bar.foo', value: 'bazz', isEqual: true, isRegex: false },
       ]);
     });
   });
@@ -118,48 +117,6 @@ describe('Alertmanager utils', () => {
       };
       const matchers = parseMatchers('foo!=bazz,bar=~ba.+');
       expect(labelsMatchMatchers(labels, matchers)).toBe(true);
-    });
-  });
-
-  describe('removeMuteTimingFromRoute', () => {
-    const route: Route = {
-      receiver: 'gmail',
-      object_matchers: [['foo', MatcherOperator.equal, 'bar']],
-      mute_time_intervals: ['test1', 'test2'],
-      routes: [
-        {
-          receiver: 'slack',
-          object_matchers: [['env', MatcherOperator.equal, 'prod']],
-          mute_time_intervals: ['test2'],
-        },
-        {
-          receiver: 'pagerduty',
-          object_matchers: [['env', MatcherOperator.equal, 'eu']],
-          mute_time_intervals: ['test1'],
-        },
-      ],
-    };
-
-    it('should remove mute timings from routes', () => {
-      expect(removeMuteTimingFromRoute('test1', route)).toEqual({
-        mute_time_intervals: ['test2'],
-        object_matchers: [['foo', '=', 'bar']],
-        receiver: 'gmail',
-        routes: [
-          {
-            mute_time_intervals: ['test2'],
-            object_matchers: [['env', '=', 'prod']],
-            receiver: 'slack',
-            routes: undefined,
-          },
-          {
-            mute_time_intervals: [],
-            object_matchers: [['env', '=', 'eu']],
-            receiver: 'pagerduty',
-            routes: undefined,
-          },
-        ],
-      });
     });
   });
 });

@@ -1,49 +1,78 @@
-import React, { FC, useCallback, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import pluralize from 'pluralize';
 import { Icon, useStyles2 } from '@grafana/ui';
-import { Alert } from 'app/types/unified-alerting';
-import { GrafanaTheme2, PanelProps } from '@grafana/data';
+import { Alert, PromRuleWithLocation } from 'app/types/unified-alerting';
+import { AlertLabels } from 'app/features/alerting/unified/components/AlertLabels';
+import { AlertStateTag } from 'app/features/alerting/unified/components/rules/AlertStateTag';
+import { dateTime, GrafanaTheme2 } from '@grafana/data';
 import { css } from '@emotion/css';
-import { GroupMode, UnifiedAlertListOptions } from './types';
-import { AlertInstancesTable } from 'app/features/alerting/unified/components/rules/AlertInstancesTable';
-import { sortAlerts } from 'app/features/alerting/unified/utils/misc';
-import { filterAlerts } from './util';
+import { PromAlertingRuleState } from 'app/types/unified-alerting-dto';
+import { omit } from 'lodash';
+import { alertInstanceKey } from 'app/features/alerting/unified/utils/rules';
 
 interface Props {
-  alerts: Alert[];
-  options: PanelProps<UnifiedAlertListOptions>['options'];
+  ruleWithLocation: PromRuleWithLocation;
+  showInstances: boolean;
 }
 
-export const AlertInstances: FC<Props> = ({ alerts, options }) => {
-  // when custom grouping is enabled, we will always uncollapse the list of alert instances
-  const defaultShowInstances = options.groupMode === GroupMode.Custom ? true : options.showInstances;
-  const [displayInstances, setDisplayInstances] = useState<boolean>(defaultShowInstances);
+export const AlertInstances = ({ ruleWithLocation, showInstances }: Props) => {
+  const { rule } = ruleWithLocation;
+  const [displayInstances, setDisplayInstances] = useState<boolean>(showInstances);
   const styles = useStyles2(getStyles);
 
-  const toggleDisplayInstances = useCallback(() => {
-    setDisplayInstances((display) => !display);
-  }, []);
+  useEffect(() => {
+    setDisplayInstances(showInstances);
+  }, [showInstances]);
 
-  const filteredAlerts = useMemo(
-    (): Alert[] => filterAlerts(options, sortAlerts(options.sortOrder, alerts)) ?? [],
-    [alerts, options]
+  // sort instances, because API returns them in random order every time
+  const sortedAlerts = useMemo(
+    (): Alert[] =>
+      displayInstances
+        ? rule.alerts.slice().sort((a, b) => alertInstanceKey(a).localeCompare(alertInstanceKey(b)))
+        : [],
+    [rule, displayInstances]
   );
 
   return (
     <div>
-      {options.groupMode === GroupMode.Default && (
-        <div className={styles.instance} onClick={() => toggleDisplayInstances()}>
+      {rule.state !== PromAlertingRuleState.Inactive && (
+        <div className={styles.instance} onClick={() => setDisplayInstances(!displayInstances)}>
           <Icon name={displayInstances ? 'angle-down' : 'angle-right'} size={'md'} />
-          <span>{`${filteredAlerts.length} ${pluralize('instance', filteredAlerts.length)}`}</span>
+          <span>{`${rule.alerts.length} ${pluralize('instance', rule.alerts.length)}`}</span>
         </div>
       )}
-      {displayInstances && <AlertInstancesTable instances={filteredAlerts} />}
+
+      {!!sortedAlerts.length && (
+        <ol className={styles.list}>
+          {sortedAlerts.map((alert, index) => {
+            return (
+              <li className={styles.listItem} key={`${alert.activeAt}-${index}`}>
+                <div>
+                  <AlertStateTag state={alert.state} />
+                  <span className={styles.date}>{dateTime(alert.activeAt).format('YYYY-MM-DD HH:mm:ss')}</span>
+                </div>
+                <AlertLabels labels={omit(alert.labels, 'alertname')} />
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </div>
   );
 };
 
-const getStyles = (_: GrafanaTheme2) => ({
+const getStyles = (theme: GrafanaTheme2) => ({
   instance: css`
     cursor: pointer;
+  `,
+  list: css`
+    list-style-type: none;
+  `,
+  listItem: css`
+    margin-top: ${theme.spacing(1)};
+  `,
+  date: css`
+    font-size: ${theme.typography.bodySmall.fontSize};
+    padding-left: ${theme.spacing(0.5)};
   `,
 });

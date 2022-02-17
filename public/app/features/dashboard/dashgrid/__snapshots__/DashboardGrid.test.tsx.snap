@@ -4,7 +4,6 @@ exports[`DashboardGrid Can render dashboard grid Should render 1`] = `
 <div
   style={
     Object {
-      "display": undefined,
       "flex": "1 1 auto",
     }
   }

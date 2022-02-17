@@ -20,7 +20,6 @@ import {
   MetricDescriptor,
   QueryType,
   PostResponse,
-  Aggregation,
 } from './types';
 import { CloudMonitoringVariableSupport } from './variables';
 
@@ -137,7 +136,7 @@ export default class CloudMonitoringDatasource extends DataSourceWithBackend<
     };
   }
 
-  async getLabels(metricType: string, refId: string, projectName: string, aggregation?: Aggregation) {
+  async getLabels(metricType: string, refId: string, projectName: string, groupBys?: string[]) {
     const options = {
       targets: [
         {
@@ -147,8 +146,8 @@ export default class CloudMonitoringDatasource extends DataSourceWithBackend<
           metricQuery: {
             projectName: this.templateSrv.replace(projectName),
             metricType: this.templateSrv.replace(metricType),
-            groupBys: this.interpolateGroupBys(aggregation?.groupBys || [], {}),
-            crossSeriesReducer: aggregation?.crossSeriesReducer ?? 'REDUCE_NONE',
+            groupBys: this.interpolateGroupBys(groupBys || [], {}),
+            crossSeriesReducer: 'REDUCE_NONE',
             view: 'HEADERS',
           },
         },
@@ -179,26 +178,7 @@ export default class CloudMonitoringDatasource extends DataSourceWithBackend<
           const dataQueryResponse = toDataQueryResponse({
             data: data,
           });
-          const labels = dataQueryResponse?.data
-            .map((f) => f.meta?.custom?.labels)
-            .filter((p) => !!p)
-            .reduce((acc, labels) => {
-              for (let key in labels) {
-                if (!acc[key]) {
-                  acc[key] = new Set<string>();
-                }
-                if (labels[key]) {
-                  acc[key].add(labels[key]);
-                }
-              }
-              return acc;
-            }, {});
-          return Object.fromEntries(
-            Object.entries(labels).map((l: any) => {
-              l[1] = Array.from(l[1]);
-              return l;
-            })
-          );
+          return dataQueryResponse?.data[0]?.meta?.custom?.labels ?? {};
         })
       )
     );

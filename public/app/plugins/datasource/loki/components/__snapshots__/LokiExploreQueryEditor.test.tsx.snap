@@ -14,6 +14,7 @@ exports[`LokiExploreQueryEditor should render component 1`] = `
           "refId": "A",
         }
       }
+      queryType="range"
       resolution={1}
     />
   }
@@ -51,11 +52,9 @@ exports[`LokiExploreQueryEditor should render component 1`] = `
       },
     }
   }
-  data-testid="loki-editor-explore"
   datasource={
     Object {
       "getTimeRangeParams": [Function],
-      "interpolateString": [Function],
       "languageProvider": LokiLanguageProvider {
         "cleanText": [Function],
         "datasource": [Circular],

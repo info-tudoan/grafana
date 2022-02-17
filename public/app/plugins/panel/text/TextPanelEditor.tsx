@@ -40,7 +40,7 @@ export const TextPanelEditor: FC<StandardEditorProps<string, any, PanelOptions>>
               width={width}
               showMiniMap={false}
               showLineNumbers={false}
-              height="500px"
+              height="200px"
               getSuggestions={getSuggestions}
             />
           );

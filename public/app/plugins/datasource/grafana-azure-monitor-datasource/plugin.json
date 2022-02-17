@@ -51,6 +51,5 @@
 
   "metrics": true,
   "annotations": true,
-  "alerting": true,
-  "backend": true
+  "alerting": true
 }

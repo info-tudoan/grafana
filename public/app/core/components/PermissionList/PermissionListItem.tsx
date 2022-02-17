@@ -65,13 +65,9 @@ export default class PermissionsListItem extends PureComponent<Props> {
           {item.inherited && folderInfo && (
             <em className="muted no-wrap">
               Inherited from folder{' '}
-              {folderInfo.canViewFolderPermissions ? (
-                <a className="text-link" href={`${folderInfo.url}/permissions`}>
-                  {folderInfo.title}
-                </a>
-              ) : (
-                folderInfo.title
-              )}
+              <a className="text-link" href={`${folderInfo.url}/permissions`}>
+                {folderInfo.title}
+              </a>{' '}
             </em>
           )}
           {inheritedFromRoot && <em className="muted no-wrap">Default Permission</em>}

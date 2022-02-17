@@ -1,9 +1,9 @@
-import { LinkedToken } from '../../monarch/LinkedToken';
+import { LinkedToken } from './LinkedToken';
 import { FROM, SCHEMA, SELECT } from '../language';
-import { SQLTokenTypes } from './types';
+import { TokenType } from './types';
 
 export const getSelectToken = (currentToken: LinkedToken | null) =>
-  currentToken?.getPreviousOfType(SQLTokenTypes.Keyword, SELECT) ?? null;
+  currentToken?.getPreviousOfType(TokenType.Keyword, SELECT) ?? null;
 
 export const getSelectStatisticToken = (currentToken: LinkedToken | null) => {
   const assumedStatisticToken = getSelectToken(currentToken)?.getNextNonWhiteSpaceToken();
@@ -18,7 +18,7 @@ export const getMetricNameToken = (currentToken: LinkedToken | null) => {
 
 export const getFromKeywordToken = (currentToken: LinkedToken | null) => {
   const selectToken = getSelectToken(currentToken);
-  return selectToken?.getNextOfType(SQLTokenTypes.Keyword, FROM);
+  return selectToken?.getNextOfType(TokenType.Keyword, FROM);
 };
 
 export const getNamespaceToken = (currentToken: LinkedToken | null) => {
@@ -30,7 +30,7 @@ export const getNamespaceToken = (currentToken: LinkedToken | null) => {
   ) {
     // schema is not used
     return nextNonWhiteSpace;
-  } else if (nextNonWhiteSpace?.isKeyword() && nextNonWhiteSpace.next?.is(SQLTokenTypes.Parenthesis, '(')) {
+  } else if (nextNonWhiteSpace?.isKeyword() && nextNonWhiteSpace.next?.is(TokenType.Parenthesis, '(')) {
     // schema is specified
     const assumedNamespaceToken = nextNonWhiteSpace.next?.next;
     if (assumedNamespaceToken?.isDoubleQuotedString() || assumedNamespaceToken?.isVariable()) {

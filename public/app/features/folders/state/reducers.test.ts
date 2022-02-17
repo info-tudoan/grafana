@@ -1,12 +1,5 @@
 import { FolderDTO, FolderState, OrgRole, PermissionLevel } from 'app/types';
-import {
-  folderReducer,
-  initialState,
-  loadFolder,
-  loadFolderPermissions,
-  setCanViewFolderPermissions,
-  setFolderTitle,
-} from './reducers';
+import { folderReducer, initialState, loadFolder, loadFolderPermissions, setFolderTitle } from './reducers';
 import { reducerTester } from '../../../../test/core/redux/reducerTester';
 
 function getTestFolder(): FolderDTO {
@@ -146,18 +139,6 @@ describe('folder reducer', () => {
               userLogin: 'MyTestUser',
             },
           ],
-        });
-    });
-  });
-
-  describe('setCanViewFolderPermissions', () => {
-    it('should set the canViewFolderPermissions value', () => {
-      reducerTester<FolderState>()
-        .givenReducer(folderReducer, { ...initialState })
-        .whenActionIsDispatched(setCanViewFolderPermissions(true))
-        .thenStateShouldEqual({
-          ...initialState,
-          canViewFolderPermissions: true,
         });
     });
   });

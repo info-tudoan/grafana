@@ -60,7 +60,7 @@
 .react-grid-item.react-grid-placeholder {
   box-shadow: $panel-grid-placeholder-shadow;
   background: $panel-grid-placeholder-bg;
-  z-index: -1;
+  z-index: 0;
   opacity: unset;
 }
 

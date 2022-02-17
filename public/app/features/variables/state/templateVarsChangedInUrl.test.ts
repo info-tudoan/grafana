@@ -1,5 +1,5 @@
 import { variableAdapters } from '../adapters';
-import { constantBuilder, customBuilder } from '../shared/testing/builders';
+import { customBuilder } from '../shared/testing/builders';
 import { DashboardState, StoreState } from '../../../types';
 import { initialState } from '../../dashboard/state/reducers';
 import { TemplatingState } from './reducers';
@@ -8,27 +8,17 @@ import { templateVarsChangedInUrl } from './actions';
 import { createCustomVariableAdapter } from '../custom/adapter';
 import { VariablesState } from './types';
 import { DashboardModel } from '../../dashboard/state';
-import { createConstantVariableAdapter } from '../constant/adapter';
-import { VariableModel } from '../types';
 
 const dashboardModel = new DashboardModel({});
 
-variableAdapters.setInit(() => [createCustomVariableAdapter(), createConstantVariableAdapter()]);
+variableAdapters.setInit(() => [createCustomVariableAdapter()]);
 
-async function getTestContext(urlQueryMap: ExtendedUrlQueryMap = {}, variable: VariableModel | undefined = undefined) {
+async function getTestContext(urlQueryMap: ExtendedUrlQueryMap = {}) {
   jest.clearAllMocks();
 
-  if (!variable) {
-    variable = customBuilder()
-      .withId('variable')
-      .withName('variable')
-      .withCurrent(['A', 'C'])
-      .withOptions('A', 'B', 'C')
-      .build();
-  }
-
+  const custom = customBuilder().withId('custom').withCurrent(['A', 'C']).withOptions('A', 'B', 'C').build();
   const setValueFromUrlMock = jest.fn();
-  variableAdapters.get(variable.type).setValueFromUrl = setValueFromUrlMock;
+  variableAdapters.get('custom').setValueFromUrl = setValueFromUrlMock;
 
   const templateVariableValueUpdatedMock = jest.fn();
   const startRefreshMock = jest.fn();
@@ -37,25 +27,25 @@ async function getTestContext(urlQueryMap: ExtendedUrlQueryMap = {}, variable: V
     getModel: () => {
       dashboardModel.templateVariableValueUpdated = templateVariableValueUpdatedMock;
       dashboardModel.startRefresh = startRefreshMock;
-      dashboardModel.templating = { list: [variable] };
+      dashboardModel.templating = { list: [custom] };
       return dashboardModel;
     },
   };
 
-  const variables: VariablesState = { variable };
-  const templating = { variables } as unknown as TemplatingState;
+  const variables: VariablesState = { custom };
+  const templating = ({ variables } as unknown) as TemplatingState;
   const state: Partial<StoreState> = {
     dashboard,
     templating,
   };
-  const getState = () => state as unknown as StoreState;
+  const getState = () => (state as unknown) as StoreState;
 
   const dispatch = jest.fn();
   const thunk = templateVarsChangedInUrl(urlQueryMap);
 
   await thunk(dispatch, getState, undefined);
 
-  return { setValueFromUrlMock, templateVariableValueUpdatedMock, startRefreshMock, variable };
+  return { setValueFromUrlMock, templateVariableValueUpdatedMock, startRefreshMock, custom };
 }
 
 describe('templateVarsChangedInUrl', () => {
@@ -85,7 +75,7 @@ describe('templateVarsChangedInUrl', () => {
     describe('and the values in url query map are the same as current in state', () => {
       it('then no value should change and dashboard should not be refreshed', async () => {
         const { setValueFromUrlMock, templateVariableValueUpdatedMock, startRefreshMock } = await getTestContext({
-          'var-variable': { value: ['A', 'C'] },
+          'var-custom': { value: ['A', 'C'] },
         });
 
         expect(setValueFromUrlMock).not.toHaveBeenCalled();
@@ -96,48 +86,34 @@ describe('templateVarsChangedInUrl', () => {
 
     describe('and the values in url query map are the not the same as current in state', () => {
       it('then the value should change to the value in url query map and dashboard should be refreshed', async () => {
-        const { setValueFromUrlMock, templateVariableValueUpdatedMock, startRefreshMock, variable } =
-          await getTestContext({
-            'var-variable': { value: 'B' },
-          });
+        const {
+          setValueFromUrlMock,
+          templateVariableValueUpdatedMock,
+          startRefreshMock,
+          custom,
+        } = await getTestContext({
+          'var-custom': { value: 'B' },
+        });
 
         expect(setValueFromUrlMock).toHaveBeenCalledTimes(1);
-        expect(setValueFromUrlMock).toHaveBeenCalledWith(variable, 'B');
+        expect(setValueFromUrlMock).toHaveBeenCalledWith(custom, 'B');
         expect(templateVariableValueUpdatedMock).toHaveBeenCalledTimes(1);
         expect(startRefreshMock).toHaveBeenCalledTimes(1);
       });
 
       describe('but the values in url query map were removed', () => {
         it('then the value should change to the value in dashboard json and dashboard should be refreshed', async () => {
-          const { setValueFromUrlMock, templateVariableValueUpdatedMock, startRefreshMock, variable } =
-            await getTestContext({
-              'var-variable': { value: '', removed: true },
-            });
+          const {
+            setValueFromUrlMock,
+            templateVariableValueUpdatedMock,
+            startRefreshMock,
+            custom,
+          } = await getTestContext({
+            'var-custom': { value: '', removed: true },
+          });
 
           expect(setValueFromUrlMock).toHaveBeenCalledTimes(1);
-          expect(setValueFromUrlMock).toHaveBeenCalledWith(variable, ['A', 'C']);
-          expect(templateVariableValueUpdatedMock).toHaveBeenCalledTimes(1);
-          expect(startRefreshMock).toHaveBeenCalledTimes(1);
-        });
-      });
-
-      describe('and the variable is a constant', () => {
-        it('then the value should change to the value in dashboard json and dashboard should be refreshed', async () => {
-          const constant = constantBuilder()
-            .withId('variable')
-            .withName('variable')
-            .withQuery('default value in dash.json')
-            .build();
-          const { setValueFromUrlMock, templateVariableValueUpdatedMock, startRefreshMock, variable } =
-            await getTestContext(
-              {
-                'var-variable': { value: '', removed: true },
-              },
-              constant
-            );
-
-          expect(setValueFromUrlMock).toHaveBeenCalledTimes(1);
-          expect(setValueFromUrlMock).toHaveBeenCalledWith(variable, 'default value in dash.json');
+          expect(setValueFromUrlMock).toHaveBeenCalledWith(custom, ['A', 'C']);
           expect(templateVariableValueUpdatedMock).toHaveBeenCalledTimes(1);
           expect(startRefreshMock).toHaveBeenCalledTimes(1);
         });

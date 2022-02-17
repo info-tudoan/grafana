@@ -1,10 +1,7 @@
-import { LanguageDefinition } from '../monarch/register';
-
-const cloudWatchSqlLanguageDefinition: LanguageDefinition = {
+export default {
   id: 'cloudwatch-sql',
   extensions: ['.cloudwatchSql'],
   aliases: ['CloudWatch', 'cloudwatch', 'CloudWatchSQL'],
   mimetypes: [],
   loader: () => import('./language'),
 };
-export default cloudWatchSqlLanguageDefinition;

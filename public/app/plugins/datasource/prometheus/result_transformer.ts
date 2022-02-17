@@ -33,7 +33,6 @@ import {
   PromValue,
   TransformOptions,
 } from './types';
-import { renderLegendFormat } from './legend';
 
 const POSITIVE_INFINITY_SAMPLE_VALUE = '+Inf';
 const NEGATIVE_INFINITY_SAMPLE_VALUE = '-Inf';
@@ -44,11 +43,8 @@ interface TimeAndValue {
 }
 
 const isTableResult = (dataFrame: DataFrame, options: DataQueryRequest<PromQuery>): boolean => {
-  // We want to process vector and scalar results in Explore as table
-  if (
-    options.app === CoreApp.Explore &&
-    (dataFrame.meta?.custom?.resultType === 'vector' || dataFrame.meta?.custom?.resultType === 'scalar')
-  ) {
+  // We want to process instant results in Explore as table
+  if ((options.app === CoreApp.Explore && dataFrame.meta?.custom?.resultType) === 'vector') {
     return true;
   }
 
@@ -125,11 +121,10 @@ export function transformDFToTable(dfs: DataFrame[]): DataFrame[] {
 
   // Group results by refId and process dataFrames with the same refId as 1 dataFrame
   const dataFramesByRefId = groupBy(dfs, 'refId');
-  const refIds = Object.keys(dataFramesByRefId);
 
-  const frames = refIds.map((refId) => {
+  const frames = Object.keys(dataFramesByRefId).map((refId) => {
     // Create timeField, valueField and labelFields
-    const valueText = getValueText(refIds.length, refId);
+    const valueText = getValueText(dfs.length, refId);
     const valueField = getValueField({ data: [], valueName: valueText });
     const timeField = getTimeField([]);
     const labelFields: MutableField[] = [];
@@ -289,7 +284,7 @@ function getDataLinks(options: ExemplarTraceIdDestination): DataLink[] {
     const dsSettings = dataSourceSrv.getInstanceSettings(options.datasourceUid);
 
     dataLinks.push({
-      title: options.urlDisplayLabel || `Query with ${dsSettings?.name}`,
+      title: `Query with ${dsSettings?.name}`,
       url: '',
       internal: {
         query: { query: '${__value.raw}', queryType: 'traceId' },
@@ -301,7 +296,7 @@ function getDataLinks(options: ExemplarTraceIdDestination): DataLink[] {
 
   if (options.url) {
     dataLinks.push({
-      title: options.urlDisplayLabel || `Go to ${options.url}`,
+      title: `Go to ${options.url}`,
       url: options.url,
       targetBlank: true,
     });
@@ -509,7 +504,7 @@ function getValueField({
 
 function createLabelInfo(labels: { [key: string]: string }, options: TransformOptions) {
   if (options?.legendFormat) {
-    const title = renderLegendFormat(getTemplateSrv().replace(options.legendFormat, options?.scopedVars), labels);
+    const title = renderTemplate(getTemplateSrv().replace(options.legendFormat, options?.scopedVars), labels);
     return { name: title, labels };
   }
 
@@ -531,6 +526,16 @@ export function getOriginalMetricName(labelData: { [key: string]: string }) {
     .map((label) => `${label[0]}="${label[1]}"`)
     .join(',');
   return `${metricName}{${labelPart}}`;
+}
+
+export function renderTemplate(aliasPattern: string, aliasData: { [key: string]: string }) {
+  const aliasRegex = /\{\{\s*(.+?)\s*\}\}/g;
+  return aliasPattern.replace(aliasRegex, (_match, g1) => {
+    if (aliasData[g1]) {
+      return aliasData[g1];
+    }
+    return '';
+  });
 }
 
 function transformToHistogramOverTime(seriesList: DataFrame[]) {

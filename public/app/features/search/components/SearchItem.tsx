@@ -29,8 +29,6 @@ export const SearchItem: FC<Props> = ({ item, editable, onToggleChecked, onTagSe
   const styles = useStyles2(getStyles);
   const tagSelected = useCallback(
     (tag: string, event: React.MouseEvent<HTMLElement>) => {
-      event.stopPropagation();
-      event.preventDefault();
       onTagSelected(tag);
     },
     [onTagSelected]
@@ -52,11 +50,11 @@ export const SearchItem: FC<Props> = ({ item, editable, onToggleChecked, onTagSe
   return (
     <Card
       data-testid={selectors.dashboardItem(item.title)}
+      heading={item.title}
       href={item.url}
       style={{ minHeight: SEARCH_ITEM_HEIGHT }}
       className={styles.container}
     >
-      <Card.Heading>{item.title}</Card.Heading>
       <Card.Figure align={'center'} className={styles.checkbox}>
         <SearchCheckbox
           aria-label="Select dashboard"
@@ -67,7 +65,7 @@ export const SearchItem: FC<Props> = ({ item, editable, onToggleChecked, onTagSe
       </Card.Figure>
       <Card.Meta separator={''}>
         <span className={styles.metaContainer}>
-          <Icon name={'folder'} aria-hidden />
+          <Icon name={'folder'} />
           {folderTitle}
         </span>
         {item.sortMetaName && (
@@ -78,7 +76,7 @@ export const SearchItem: FC<Props> = ({ item, editable, onToggleChecked, onTagSe
         )}
       </Card.Meta>
       <Card.Tags>
-        <TagList tags={item.tags} onClick={tagSelected} getAriaLabel={(tag) => `Filter by tag "${tag}"`} />
+        <TagList tags={item.tags} onClick={tagSelected} />
       </Card.Tags>
     </Card>
   );
@@ -88,7 +86,10 @@ const getStyles = (theme: GrafanaTheme2) => {
   return {
     container: css`
       margin-bottom: ${theme.spacing(0.75)};
-      padding: ${theme.spacing(1)} ${theme.spacing(2)};
+
+      a {
+        padding: ${theme.spacing(1)} ${theme.spacing(2)};
+      }
     `,
     metaContainer: css`
       display: flex;

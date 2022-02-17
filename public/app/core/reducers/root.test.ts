@@ -7,7 +7,7 @@ import { cleanUpAction } from '../actions/cleanUp';
 import { initialTeamsState, teamsLoaded } from '../../features/teams/state/reducers';
 
 jest.mock('@grafana/runtime', () => ({
-  ...(jest.requireActual('@grafana/runtime') as unknown as object),
+  ...((jest.requireActual('@grafana/runtime') as unknown) as object),
   config: {
     bootData: {
       navTree: [],
@@ -67,7 +67,6 @@ describe('rootReducer', () => {
           expect(resultingState.teams).toEqual({
             hasFetched: true,
             searchQuery: '',
-            searchPage: 1,
             teams,
           });
           return true;
@@ -82,7 +81,6 @@ describe('rootReducer', () => {
         teams: {
           hasFetched: true,
           searchQuery: '',
-          searchPage: 1,
           teams,
         },
       } as StoreState;

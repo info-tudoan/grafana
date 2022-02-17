@@ -6,7 +6,6 @@ import { AddVariable, getInstanceState, initialVariablesState, VariablePayload, 
 import { variableAdapters } from '../adapters';
 import { changeVariableNameSucceeded } from '../editor/reducer';
 import { ensureStringValues } from '../utils';
-import { getNextVariableIndex } from './selectors';
 
 const sharedReducerSlice = createSlice({
   name: 'templating/shared',
@@ -72,7 +71,7 @@ const sharedReducerSlice = createSlice({
       const original = cloneDeep<VariableModel>(state[action.payload.id]);
       const name = `copy_of_${original.name}`;
       const newId = action.payload.data?.newId ?? name;
-      const index = getNextVariableIndex(Object.values(state));
+      const index = Object.keys(state).length;
       state[newId] = {
         ...cloneDeep(variableAdapters.get(action.payload.type).initialState),
         ...original,
@@ -85,17 +84,16 @@ const sharedReducerSlice = createSlice({
       state: VariablesState,
       action: PayloadAction<VariablePayload<{ fromIndex: number; toIndex: number }>>
     ) => {
-      const { toIndex, fromIndex } = action.payload.data;
-      const variableStates = Object.values(state);
-      for (let index = 0; index < variableStates.length; index++) {
-        const variable = variableStates[index];
-        if (variable.index === fromIndex) {
-          variable.index = toIndex;
-        } else if (variable.index > fromIndex && variable.index <= toIndex) {
-          variable.index--;
-        } else if (variable.index < fromIndex && variable.index >= toIndex) {
-          variable.index++;
-        }
+      const variables = Object.values(state).map((s) => s);
+      const fromVariable = variables.find((v) => v.index === action.payload.data.fromIndex);
+      const toVariable = variables.find((v) => v.index === action.payload.data.toIndex);
+
+      if (fromVariable) {
+        state[fromVariable.id].index = action.payload.data.toIndex;
+      }
+
+      if (toVariable) {
+        state[toVariable.id].index = action.payload.data.fromIndex;
       }
     },
     changeVariableType: (state: VariablesState, action: PayloadAction<VariablePayload<{ newType: VariableType }>>) => {

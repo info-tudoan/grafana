@@ -65,19 +65,16 @@ export const textMarker = (cfg: StyleConfigValues) => {
 };
 
 export const circleMarker = (cfg: StyleConfigValues) => {
-  const stroke = new Stroke({ color: cfg.color, width: cfg.lineWidth ?? 1 });
   return new Style({
     image: new Circle({
-      stroke,
+      stroke: new Stroke({ color: cfg.color, width: cfg.lineWidth ?? 1 }),
       fill: getFillColor(cfg),
       radius: cfg.size ?? DEFAULT_SIZE,
     }),
     text: textLabel(cfg),
-    stroke, // in case lines are sent to the markers layer
   });
 };
 
-// Does not have image
 export const polyStyle = (cfg: StyleConfigValues) => {
   return new Style({
     fill: getFillColor(cfg),
@@ -219,7 +216,7 @@ const makers: SymbolMaker[] = [
   },
 ];
 
-async function prepareSVG(url: string, size?: number): Promise<string> {
+async function prepareSVG(url: string): Promise<string> {
   return fetch(url, { method: 'GET' })
     .then((res) => {
       return res.text();
@@ -231,15 +228,8 @@ async function prepareSVG(url: string, size?: number): Promise<string> {
       if (!svg) {
         return '';
       }
-
-      const svgSize = size ?? 100;
-      const width = svg.getAttribute('width') ?? svgSize;
-      const height = svg.getAttribute('height') ?? svgSize;
-
       // open layers requires a white fill becaues it uses tint to set color
       svg.setAttribute('fill', '#fff');
-      svg.setAttribute('width', `${width}px`);
-      svg.setAttribute('height', `${height}px`);
       const svgString = new XMLSerializer().serializeToString(svg);
       const svgURI = encodeURIComponent(svgString);
       return `data:image/svg+xml,${svgURI}`;

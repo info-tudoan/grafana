@@ -1,9 +1,10 @@
 import React, { PureComponent } from 'react';
-import { Button, ClipboardButton, JSONFormatter, LoadingPlaceholder } from '@grafana/ui';
+import { Button, JSONFormatter, LoadingPlaceholder } from '@grafana/ui';
 import { selectors } from '@grafana/e2e-selectors';
 import { AppEvents, DataFrame } from '@grafana/data';
 
 import appEvents from 'app/core/app_events';
+import { CopyToClipboard } from 'app/core/components/CopyToClipboard/CopyToClipboard';
 import { PanelModel } from 'app/features/dashboard/state';
 import { getPanelInspectorStyles } from './styles';
 import { supportsDataQuery } from 'app/features/dashboard/components/PanelEditor/utils';
@@ -11,7 +12,6 @@ import { config, RefreshEvent } from '@grafana/runtime';
 import { css } from '@emotion/css';
 import { Subscription } from 'rxjs';
 import { backendSrv } from 'app/core/services/backend_srv';
-import { Stack } from '@grafana/experimental';
 
 interface DsQuery {
   isLoading: boolean;
@@ -237,14 +237,14 @@ export class QueryInspector extends PureComponent<Props, State> {
       <div>
         {executedQueries.map((info) => {
           return (
-            <Stack key={info.refId} gap={1} direction="column">
+            <div key={info.refId}>
               <div>
                 <span className={styles.refId}>{info.refId}:</span>
                 {info.frames > 1 && <span>{info.frames} frames, </span>}
                 <span>{info.rows} rows</span>
               </div>
               <pre>{info.query}</pre>
-            </Stack>
+            </div>
           );
         })}
       </div>
@@ -294,15 +294,16 @@ export class QueryInspector extends PureComponent<Props, State> {
           )}
 
           {haveData && (
-            <ClipboardButton
-              getText={this.getTextForClipboard}
-              onClipboardCopy={this.onClipboardSuccess}
+            <CopyToClipboard
+              text={this.getTextForClipboard}
+              onSuccess={this.onClipboardSuccess}
+              elType="div"
               className={styles.toolbarItem}
-              icon="copy"
-              variant="secondary"
             >
-              Copy to clipboard
-            </ClipboardButton>
+              <Button icon="copy" variant="secondary">
+                Copy to clipboard
+              </Button>
+            </CopyToClipboard>
           )}
           <div className="flex-grow-1" />
         </div>

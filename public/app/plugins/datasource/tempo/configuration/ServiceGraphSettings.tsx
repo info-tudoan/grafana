@@ -25,7 +25,6 @@ export function ServiceGraphSettings({ options, onOptionsChange }: Props) {
           labelWidth={26}
         >
           <DataSourcePicker
-            inputId="service-graph-data-source-picker"
             pluginId="prometheus"
             current={options.jsonData.serviceMap?.datasourceUid}
             noDefault={true}

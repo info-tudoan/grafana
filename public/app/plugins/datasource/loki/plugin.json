@@ -9,7 +9,6 @@
   "alerting": true,
   "annotations": true,
   "streaming": true,
-  "backend": true,
 
   "queryOptions": {
     "maxDataPoints": true

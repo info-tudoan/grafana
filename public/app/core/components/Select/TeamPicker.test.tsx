@@ -13,11 +13,11 @@ jest.mock('@grafana/runtime', () => ({
 }));
 
 describe('TeamPicker', () => {
-  it('renders correctly', async () => {
+  it('renders correctly', () => {
     const props = {
       onSelected: () => {},
     };
     render(<TeamPicker {...props} />);
-    expect(await screen.findByTestId('teamPicker')).toBeInTheDocument();
+    expect(screen.getByTestId('teamPicker')).toBeInTheDocument();
   });
 });

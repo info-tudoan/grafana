@@ -1,4 +1,3 @@
-@use 'sass:list';
 $input-border: 1px solid $input-border-color;
 
 .gf-form {
@@ -262,7 +261,7 @@ $input-border: 1px solid $input-border-color;
       font-size: 11px;
       background-color: transparent;
       color: $text-color;
-      font: normal normal normal list.slash($font-size-sm, 1) FontAwesome;
+      font: normal normal normal $font-size-sm/1 FontAwesome;
       content: '\f0d7';
       pointer-events: none;
     }
@@ -346,7 +345,7 @@ $input-border: 1px solid $input-border-color;
     right: 11px;
     background-color: transparent;
     color: $text-color;
-    font: normal normal normal list.slash($font-size-sm, 1) FontAwesome;
+    font: normal normal normal $font-size-sm/1 FontAwesome;
     content: '\f0d7';
     pointer-events: none;
     font-size: 11px;
@@ -392,7 +391,7 @@ $input-border: 1px solid $input-border-color;
     right: $space-sm;
     background-color: transparent;
     color: $input-color;
-    font: normal normal normal list.slash($font-size-sm, 1) FontAwesome;
+    font: normal normal normal $font-size-sm/1 FontAwesome;
     content: '\f0d7';
     pointer-events: none;
     font-size: 11px;

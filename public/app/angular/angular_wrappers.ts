@@ -7,7 +7,6 @@ import EmptyListCTA from '../core/components/EmptyListCTA/EmptyListCTA';
 import { TagFilter } from '../core/components/TagFilter/TagFilter';
 import { MetricSelect } from '../core/components/Select/MetricSelect';
 import {
-  ClipboardButton,
   ColorPicker,
   DataLinksInlineEditor,
   DataSourceHttpSettings,
@@ -134,7 +133,6 @@ export function registerAngularDirectives() {
     'isConfigured',
     'inputWidth',
     'labelWidth',
-    'aria-label',
     ['onReset', { watchDepth: 'reference', wrapApply: true }],
     ['onChange', { watchDepth: 'reference', wrapApply: true }],
   ]);
@@ -201,9 +199,5 @@ export function registerAngularDirectives() {
     'query',
     ['datasource', { watchDepth: 'reference' }],
     'onChange',
-  ]);
-
-  react2AngularDirective('clipboardButton', ClipboardButton, [
-    ['getText', { watchDepth: 'reference', wrapApply: true }],
   ]);
 }

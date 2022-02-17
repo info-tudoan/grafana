@@ -37,10 +37,7 @@ export default class TempoLanguageProvider extends LanguageProvider {
     if (!value) {
       return emptyResult;
     }
-
-    const query = value.endText.getText();
-    const isValue = query[query.indexOf(text) - 1] === '=';
-    if (isValue || text === '=') {
+    if (text === '=') {
       return this.getTagValueCompletionItems(value);
     }
     return this.getTagsCompletionItems();
@@ -61,17 +58,19 @@ export default class TempoLanguageProvider extends LanguageProvider {
   };
 
   async getTagValueCompletionItems(value: Value) {
-    const tags = value.endText.getText().split(' ');
-
-    let tagName = tags[tags.length - 1] ?? '';
-    tagName = tagName.split('=')[0];
-
+    const tagNames = value.endText.getText().split(' ');
+    let tagName = tagNames[0];
+    // Get last item if multiple tags
+    if (tagNames.length > 1) {
+      tagName = tagNames[tagNames.length - 1];
+    }
+    tagName = tagName.slice(0, -1);
     const response = await this.request(`/api/search/tag/${tagName}/values`, []);
     const suggestions: CompletionItemGroup[] = [];
 
     if (response && response.tagValues) {
       suggestions.push({
-        label: `Tag Values`,
+        label: `TagValues`,
         items: response.tagValues.map((tagValue: string) => ({ label: tagValue })),
       });
     }

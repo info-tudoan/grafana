@@ -70,7 +70,7 @@ export class QueryRunner implements QueryRunnerSrv {
     };
 
     // Add deprecated property
-    request.rangeRaw = timeRange.raw;
+    (request as any).rangeRaw = timeRange.raw;
 
     from(getDataSource(datasource, request.scopedVars))
       .pipe(first())
@@ -144,9 +144,8 @@ async function getDataSource(
   datasource: DataSourceRef | DataSourceApi | null,
   scopedVars: ScopedVars
 ): Promise<DataSourceApi> {
-  if (datasource && 'query' in datasource) {
-    return datasource;
+  if (datasource && (datasource as any).query) {
+    return datasource as DataSourceApi;
   }
-
-  return getDatasourceSrv().get(datasource, scopedVars);
+  return await getDatasourceSrv().get(datasource, scopedVars);
 }

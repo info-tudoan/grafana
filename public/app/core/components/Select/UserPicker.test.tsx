@@ -7,9 +7,8 @@ jest.mock('@grafana/runtime', () => ({
 }));
 
 describe('UserPicker', () => {
-  it('renders correctly', async () => {
+  it('renders correctly', () => {
     render(<UserPicker onSelected={() => {}} />);
-
-    expect(await screen.findByTestId('userPicker')).toBeInTheDocument();
+    expect(screen.getByTestId('userPicker')).toBeInTheDocument();
   });
 });

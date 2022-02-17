@@ -12,9 +12,6 @@ interface Props {
   addFilter: (filter: AdHocVariableFilter) => void;
   removeFilter: (index: number) => void;
   changeFilter: (index: number, newFilter: AdHocVariableFilter) => void;
-  // Passes options to the datasources getTagKeys(options?: any) method
-  // which is called to fetch the available filter key options in AdHocFilterKey.tsx
-  getTagKeysOptions?: any;
 }
 
 /**
@@ -54,7 +51,6 @@ export class AdHocFilter extends PureComponent<Props> {
           datasource={this.props.datasource!}
           appendBefore={filters.length > 0 ? <ConditionSegment label="AND" /> : null}
           onCompleted={this.appendFilterToVariable}
-          getTagKeysOptions={this.props.getTagKeysOptions}
         />
       </div>
     );
@@ -79,7 +75,6 @@ export class AdHocFilter extends PureComponent<Props> {
           onKeyChange={this.onChange(index, 'key')}
           onOperatorChange={this.onChange(index, 'operator')}
           onValueChange={this.onChange(index, 'value')}
-          getTagKeysOptions={this.props.getTagKeysOptions}
         />
       </React.Fragment>
     );

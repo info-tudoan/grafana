@@ -14,7 +14,7 @@ import { getShiftedTimeRange, getZoomedTimeRange } from 'app/core/utils/timePick
 import { config } from 'app/core/config';
 import { getRefreshFromUrl } from '../utils/getRefreshFromUrl';
 import { locationService } from '@grafana/runtime';
-import { AbsoluteTimeEvent, ShiftTimeEvent, ShiftTimeEventPayload, ZoomOutEvent } from '../../../types/events';
+import { ShiftTimeEvent, ShiftTimeEventPayload, ZoomOutEvent } from '../../../types/events';
 import { contextSrv, ContextSrv } from 'app/core/services/context_srv';
 import appEvents from 'app/core/app_events';
 
@@ -39,10 +39,6 @@ export class TimeSrv {
 
     appEvents.subscribe(ShiftTimeEvent, (e) => {
       this.shiftTime(e.payload);
-    });
-
-    appEvents.subscribe(AbsoluteTimeEvent, () => {
-      this.makeAbsoluteTime();
     });
 
     document.addEventListener('visibilitychange', () => {
@@ -291,16 +287,22 @@ export class TimeSrv {
     // update url
     if (fromRouteUpdate !== true) {
       const urlRange = this.timeRangeForUrl();
-      const urlParams = locationService.getSearchObject();
+      const urlParams = locationService.getSearch();
 
-      if (urlParams.from === urlRange.from.toString() && urlParams.to === urlRange.to.toString()) {
+      const from = urlParams.get('from');
+      const to = urlParams.get('to');
+
+      if (from && to && from === urlRange.from.toString() && to === urlRange.to.toString()) {
         return;
       }
 
-      urlParams.from = urlRange.from.toString();
-      urlParams.to = urlRange.to.toString();
+      urlParams.set('from', urlRange.from.toString());
+      urlParams.set('to', urlRange.to.toString());
 
-      locationService.partial(urlParams);
+      locationService.push({
+        ...locationService.getLocation(),
+        search: urlParams.toString(),
+      });
     }
 
     this.refreshDashboard();
@@ -350,16 +352,6 @@ export class TimeSrv {
       from: toUtc(from),
       to: toUtc(to),
     });
-  }
-
-  makeAbsoluteTime() {
-    const params = locationService.getSearch();
-    if (params.get('left')) {
-      return; // explore handles this;
-    }
-
-    const { from, to } = this.timeRange();
-    this.setTime({ from, to });
   }
 
   // isRefreshOutsideThreshold function calculates the difference between last refresh and now

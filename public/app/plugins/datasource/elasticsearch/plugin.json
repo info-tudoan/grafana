@@ -22,7 +22,6 @@
   "annotations": true,
   "metrics": true,
   "logs": true,
-  "backend": true,
 
   "queryOptions": {
     "minInterval": true

@@ -1,20 +1,18 @@
-import React, { useState } from 'react';
+import React, { FC, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { css, cx } from '@emotion/css';
 import { cloneDeep } from 'lodash';
 import { GrafanaTheme2, NavModelItem, NavSection } from '@grafana/data';
 import { Icon, IconName, useTheme2 } from '@grafana/ui';
 import { locationService } from '@grafana/runtime';
-import { getKioskMode } from 'app/core/navigation/kiosk';
-import { KioskMode, StoreState } from 'app/types';
+import { Branding } from 'app/core/components/Branding/Branding';
+import config from 'app/core/config';
+import { KioskMode } from 'app/types';
 import { enrichConfigItems, getActiveItem, isMatchOrChildMatch, isSearchActive, SEARCH_ITEM_ID } from './utils';
 import { OrgSwitcher } from '../OrgSwitcher';
 import { NavBarSection } from './NavBarSection';
-import { NavBarMenu } from './NavBarMenu';
 import NavBarItem from './NavBarItem';
-import { NavBarItemWithoutMenu } from './NavBarItemWithoutMenu';
-import { Branding } from '../Branding/Branding';
-import { connect, ConnectedProps } from 'react-redux';
+import { NavBarMenu } from './NavBarMenu';
 
 const onOpenSearch = () => {
   locationService.partial({ search: 'open' });
@@ -24,29 +22,19 @@ const searchItem: NavModelItem = {
   id: SEARCH_ITEM_ID,
   onClick: onOpenSearch,
   text: 'Search dashboards',
-  icon: 'search',
 };
 
-const mapStateToProps = (state: StoreState) => ({
-  navBarTree: state.navBarTree,
-});
-
-const mapDispatchToProps = {};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-
-export interface Props extends ConnectedProps<typeof connector> {}
-
-export const NavBarNextUnconnected = React.memo(({ navBarTree }: Props) => {
+export const NavBarNext: FC = React.memo(() => {
   const theme = useTheme2();
   const styles = getStyles(theme);
   const location = useLocation();
-  const kiosk = getKioskMode();
+  const query = new URLSearchParams(location.search);
+  const kiosk = query.get('kiosk') as KioskMode;
   const [showSwitcherModal, setShowSwitcherModal] = useState(false);
   const toggleSwitcherModal = () => {
     setShowSwitcherModal(!showSwitcherModal);
   };
-  const navTree = cloneDeep(navBarTree);
+  const navTree: NavModelItem[] = cloneDeep(config.bootData.navTree);
   const coreItems = navTree.filter((item) => item.section === NavSection.Core);
   const pluginItems = navTree.filter((item) => item.section === NavSection.Plugin);
   const configItems = enrichConfigItems(
@@ -57,7 +45,7 @@ export const NavBarNextUnconnected = React.memo(({ navBarTree }: Props) => {
   const activeItem = isSearchActive(location) ? searchItem : getActiveItem(navTree, location.pathname);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  if (kiosk !== KioskMode.Off) {
+  if (kiosk !== null) {
     return null;
   }
 
@@ -68,10 +56,20 @@ export const NavBarNextUnconnected = React.memo(({ navBarTree }: Props) => {
       </div>
 
       <NavBarSection>
-        <NavBarItemWithoutMenu label="Main menu" className={styles.grafanaLogo} onClick={() => setMenuOpen(!menuOpen)}>
+        <NavBarItem
+          onClick={() => setMenuOpen(!menuOpen)}
+          label="Main menu"
+          className={styles.grafanaLogo}
+          showMenu={false}
+        >
           <Branding.MenuLogo />
-        </NavBarItemWithoutMenu>
-        <NavBarItem className={styles.search} isActive={activeItem === searchItem} link={searchItem}>
+        </NavBarItem>
+        <NavBarItem
+          className={styles.search}
+          isActive={activeItem === searchItem}
+          label={searchItem.text}
+          onClick={searchItem.onClick}
+        >
           <Icon name="search" size="xl" />
         </NavBarItem>
       </NavBarSection>
@@ -81,7 +79,10 @@ export const NavBarNextUnconnected = React.memo(({ navBarTree }: Props) => {
           <NavBarItem
             key={`${link.id}-${index}`}
             isActive={isMatchOrChildMatch(link, activeItem)}
-            link={{ ...link, subTitle: undefined, onClick: undefined }}
+            label={link.text}
+            menuItems={link.children}
+            target={link.target}
+            url={link.url}
           >
             {link.icon && <Icon name={link.icon as IconName} size="xl" />}
             {link.img && <img src={link.img} alt={`${link.text} logo`} />}
@@ -92,7 +93,16 @@ export const NavBarNextUnconnected = React.memo(({ navBarTree }: Props) => {
       {pluginItems.length > 0 && (
         <NavBarSection>
           {pluginItems.map((link, index) => (
-            <NavBarItem key={`${link.id}-${index}`} isActive={isMatchOrChildMatch(link, activeItem)} link={link}>
+            <NavBarItem
+              key={`${link.id}-${index}`}
+              isActive={isMatchOrChildMatch(link, activeItem)}
+              label={link.text}
+              menuItems={link.children}
+              menuSubTitle={link.subTitle}
+              onClick={link.onClick}
+              target={link.target}
+              url={link.url}
+            >
               {link.icon && <Icon name={link.icon as IconName} size="xl" />}
               {link.img && <img src={link.img} alt={`${link.text} logo`} />}
             </NavBarItem>
@@ -107,8 +117,13 @@ export const NavBarNextUnconnected = React.memo(({ navBarTree }: Props) => {
           <NavBarItem
             key={`${link.id}-${index}`}
             isActive={isMatchOrChildMatch(link, activeItem)}
+            label={link.text}
+            menuItems={link.children}
+            menuSubTitle={link.subTitle}
+            onClick={link.onClick}
             reverseMenuDirection
-            link={link}
+            target={link.target}
+            url={link.url}
           >
             {link.icon && <Icon name={link.icon as IconName} size="xl" />}
             {link.img && <img src={link.img} alt={`${link.text} logo`} />}
@@ -128,9 +143,7 @@ export const NavBarNextUnconnected = React.memo(({ navBarTree }: Props) => {
   );
 });
 
-NavBarNextUnconnected.displayName = 'NavBarNext';
-
-export const NavBarNext = connector(NavBarNextUnconnected);
+NavBarNext.displayName = 'NavBar';
 
 const getStyles = (theme: GrafanaTheme2) => ({
   search: css`

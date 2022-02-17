@@ -13,7 +13,6 @@ import {
 } from '@grafana/ui';
 import { Observable } from 'rxjs';
 import { useObservable } from 'react-use';
-import { capitalize } from 'lodash';
 
 import {
   ColorDimensionEditor,
@@ -295,9 +294,9 @@ export const StyleEditor: FC<StandardEditorProps<StyleConfig, StyleEditorOptions
               value={value?.textConfig?.textAlign ?? defaultStyleConfig.textConfig.textAlign}
               onChange={onTextAlignChange}
               options={[
-                { value: TextAlignment.Left, label: capitalize(TextAlignment.Left) },
-                { value: TextAlignment.Center, label: capitalize(TextAlignment.Center) },
-                { value: TextAlignment.Right, label: capitalize(TextAlignment.Right) },
+                { value: TextAlignment.Left, label: TextAlignment.Left },
+                { value: TextAlignment.Center, label: TextAlignment.Center },
+                { value: TextAlignment.Right, label: TextAlignment.Right },
               ]}
             />
           </Field>
@@ -306,9 +305,9 @@ export const StyleEditor: FC<StandardEditorProps<StyleConfig, StyleEditorOptions
               value={value?.textConfig?.textBaseline ?? defaultStyleConfig.textConfig.textBaseline}
               onChange={onTextBaselineChange}
               options={[
-                { value: TextBaseline.Top, label: capitalize(TextBaseline.Top) },
-                { value: TextBaseline.Middle, label: capitalize(TextBaseline.Middle) },
-                { value: TextBaseline.Bottom, label: capitalize(TextBaseline.Bottom) },
+                { value: TextBaseline.Top, label: TextBaseline.Top },
+                { value: TextBaseline.Middle, label: TextBaseline.Middle },
+                { value: TextBaseline.Bottom, label: TextBaseline.Bottom },
               ]}
             />
           </Field>

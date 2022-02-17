@@ -1,28 +1,22 @@
 import React, { useEffect, useMemo } from 'react';
 import { sortBy } from 'lodash';
 import { useDispatch } from 'react-redux';
-import { GrafanaTheme2, PanelProps } from '@grafana/data';
-import { CustomScrollbar, LoadingPlaceholder, useStyles2 } from '@grafana/ui';
+import { GrafanaTheme, GrafanaTheme2, intervalToAbbreviatedDurationString, PanelProps } from '@grafana/data';
+import { CustomScrollbar, Icon, IconName, LoadingPlaceholder, useStyles, useStyles2 } from '@grafana/ui';
 import { css } from '@emotion/css';
 
+import { AlertInstances } from './AlertInstances';
 import alertDef from 'app/features/alerting/state/alertDef';
-import { GroupMode, SortOrder, UnifiedAlertListOptions } from './types';
+import { SortOrder, UnifiedAlertListOptions } from './types';
 
-import { flattenRules, getFirstActiveAt } from 'app/features/alerting/unified/utils/rules';
+import { flattenRules, alertStateToState, getFirstActiveAt } from 'app/features/alerting/unified/utils/rules';
 import { PromRuleWithLocation } from 'app/types/unified-alerting';
 import { fetchAllPromRulesAction } from 'app/features/alerting/unified/state/actions';
 import { useUnifiedAlertingSelector } from 'app/features/alerting/unified/hooks/useUnifiedAlertingSelector';
-import {
-  getAllRulesSourceNames,
-  GRAFANA_DATASOURCE_NAME,
-  GRAFANA_RULES_SOURCE_NAME,
-} from 'app/features/alerting/unified/utils/datasource';
+import { getAllRulesSourceNames } from 'app/features/alerting/unified/utils/datasource';
 import { getDashboardSrv } from 'app/features/dashboard/services/DashboardSrv';
 import { Annotation, RULE_LIST_POLL_INTERVAL_MS } from 'app/features/alerting/unified/utils/constants';
 import { PromAlertingRuleState } from 'app/types/unified-alerting-dto';
-import { labelsMatchMatchers, parseMatchers } from 'app/features/alerting/unified/utils/alertmanager';
-import UngroupedModeView from './unified-alerting/UngroupedView';
-import GroupedModeView from './unified-alerting/GroupedView';
 
 export function UnifiedAlertList(props: PanelProps<UnifiedAlertListOptions>) {
   const dispatch = useDispatch();
@@ -44,7 +38,8 @@ export function UnifiedAlertList(props: PanelProps<UnifiedAlertListOptions>) {
     (name) => promRulesRequests[name]?.result?.length && !promRulesRequests[name]?.error
   );
 
-  const styles = useStyles2(getStyles);
+  const styles = useStyles(getStyles);
+  const stateStyle = useStyles2(getStateTagStyles);
 
   const rules = useMemo(
     () =>
@@ -58,6 +53,8 @@ export function UnifiedAlertList(props: PanelProps<UnifiedAlertListOptions>) {
     [props.options, promRulesRequests]
   );
 
+  const rulesToDisplay = rules.length <= props.options.maxItems ? rules : rules.slice(0, props.options.maxItems);
+
   const noAlertsMessage = rules.length ? '' : 'No alerts';
 
   return (
@@ -66,12 +63,49 @@ export function UnifiedAlertList(props: PanelProps<UnifiedAlertListOptions>) {
         {dispatched && loading && !haveResults && <LoadingPlaceholder text="Loading..." />}
         {noAlertsMessage && <div className={styles.noAlertsMessage}>{noAlertsMessage}</div>}
         <section>
-          {props.options.groupMode === GroupMode.Custom && haveResults && (
-            <GroupedModeView rules={rules} options={props.options} />
-          )}
-          {props.options.groupMode === GroupMode.Default && haveResults && (
-            <UngroupedModeView rules={rules} options={props.options} />
-          )}
+          <ol className={styles.alertRuleList}>
+            {haveResults &&
+              rulesToDisplay.map((ruleWithLocation, index) => {
+                const { rule, namespaceName, groupName } = ruleWithLocation;
+                const firstActiveAt = getFirstActiveAt(rule);
+                return (
+                  <li
+                    className={styles.alertRuleItem}
+                    key={`alert-${namespaceName}-${groupName}-${rule.name}-${index}`}
+                  >
+                    <div className={stateStyle.icon}>
+                      <Icon
+                        name={alertDef.getStateDisplayModel(rule.state).iconClass as IconName}
+                        className={stateStyle[alertStateToState[rule.state]]}
+                        size={'lg'}
+                      />
+                    </div>
+                    <div>
+                      <div className={styles.instanceDetails}>
+                        <div className={styles.alertName} title={rule.name}>
+                          {rule.name}
+                        </div>
+                        <div className={styles.alertDuration}>
+                          <span className={stateStyle[alertStateToState[rule.state]]}>{rule.state.toUpperCase()}</span>{' '}
+                          {firstActiveAt && rule.state !== PromAlertingRuleState.Inactive && (
+                            <>
+                              for{' '}
+                              <span>
+                                {intervalToAbbreviatedDurationString({
+                                  start: firstActiveAt,
+                                  end: Date.now(),
+                                })}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <AlertInstances ruleWithLocation={ruleWithLocation} showInstances={props.options.showInstances} />
+                    </div>
+                  </li>
+                );
+              })}
+          </ol>
         </section>
       </div>
     </CustomScrollbar>
@@ -117,39 +151,19 @@ function filterRules(options: PanelProps<UnifiedAlertListOptions>['options'], ru
       );
     });
   }
-  if (options.alertInstanceLabelFilter) {
-    const matchers = parseMatchers(options.alertInstanceLabelFilter);
-    // Reduce rules and instances to only those that match
-    filteredRules = filteredRules.reduce((rules, rule) => {
-      const filteredAlerts = (rule.rule.alerts ?? []).filter(({ labels }) => labelsMatchMatchers(labels, matchers));
-      if (filteredAlerts.length) {
-        rules.push({ ...rule, rule: { ...rule.rule, alerts: filteredAlerts } });
-      }
-      return rules;
-    }, [] as PromRuleWithLocation[]);
-  }
   if (options.folder) {
     filteredRules = filteredRules.filter((rule) => {
       return rule.namespaceName === options.folder.title;
     });
   }
-  if (options.datasource) {
-    const isGrafanaDS = options.datasource === GRAFANA_DATASOURCE_NAME;
-
-    filteredRules = filteredRules.filter(
-      isGrafanaDS
-        ? ({ dataSourceName }) => dataSourceName === GRAFANA_RULES_SOURCE_NAME
-        : ({ dataSourceName }) => dataSourceName === options.datasource
-    );
-  }
 
   return filteredRules;
 }
 
-export const getStyles = (theme: GrafanaTheme2) => ({
+const getStyles = (theme: GrafanaTheme) => ({
   cardContainer: css`
-    padding: ${theme.v1.spacing.xs} 0 ${theme.v1.spacing.xxs} 0;
-    line-height: ${theme.v1.typography.lineHeight.md};
+    padding: ${theme.spacing.xs} 0 ${theme.spacing.xxs} 0;
+    line-height: ${theme.typography.lineHeight.md};
     margin-bottom: 0px;
   `,
   container: css`
@@ -167,34 +181,29 @@ export const getStyles = (theme: GrafanaTheme2) => ({
     align-items: center;
     width: 100%;
     height: 100%;
-    background: ${theme.v1.colors.bg2};
-    padding: ${theme.v1.spacing.xs} ${theme.v1.spacing.sm};
-    border-radius: ${theme.v1.border.radius.md};
-    margin-bottom: ${theme.v1.spacing.xs};
+    background: ${theme.colors.bg2};
+    padding: ${theme.spacing.xs} ${theme.spacing.sm};
+    border-radius: ${theme.border.radius.md};
+    margin-bottom: ${theme.spacing.xs};
 
     & > * {
-      margin-right: ${theme.v1.spacing.sm};
+      margin-right: ${theme.spacing.sm};
     }
   `,
   alertName: css`
-    font-size: ${theme.v1.typography.size.md};
-    font-weight: ${theme.v1.typography.weight.bold};
-  `,
-  alertLabels: css`
-    > * {
-      margin-right: ${theme.v1.spacing.xs};
-    }
+    font-size: ${theme.typography.size.md};
+    font-weight: ${theme.typography.weight.bold};
   `,
   alertDuration: css`
-    font-size: ${theme.v1.typography.size.sm};
+    font-size: ${theme.typography.size.sm};
   `,
   alertRuleItemText: css`
-    font-weight: ${theme.v1.typography.weight.bold};
-    font-size: ${theme.v1.typography.size.sm};
+    font-weight: ${theme.typography.weight.bold};
+    font-size: ${theme.typography.size.sm};
     margin: 0;
   `,
   alertRuleItemTime: css`
-    color: ${theme.v1.colors.textWeak};
+    color: ${theme.colors.textWeak};
     font-weight: normal;
     white-space: nowrap;
   `,
@@ -212,7 +221,7 @@ export const getStyles = (theme: GrafanaTheme2) => ({
     height: 100%;
   `,
   alertIcon: css`
-    margin-right: ${theme.v1.spacing.xs};
+    margin-right: ${theme.spacing.xs};
   `,
   instanceDetails: css`
     min-width: 1px;
@@ -220,7 +229,68 @@ export const getStyles = (theme: GrafanaTheme2) => ({
     overflow: hidden;
     text-overflow: ellipsis;
   `,
-  customGroupDetails: css`
-    margin-bottom: ${theme.v1.spacing.xs};
+});
+
+const getStateTagStyles = (theme: GrafanaTheme2) => ({
+  common: css`
+    width: 70px;
+    text-align: center;
+    align-self: stretch;
+
+    display: inline-block;
+    color: white;
+    border-radius: ${theme.shape.borderRadius()};
+    font-size: ${theme.typography.size.sm};
+    /* padding: ${theme.spacing(2, 0)}; */
+    text-transform: capitalize;
+    line-height: 1.2;
+    flex-shrink: 0;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  `,
+  icon: css`
+    margin-top: ${theme.spacing(2.5)};
+    align-self: flex-start;
+  `,
+  // good: css`
+  //   background-color: ${theme.colors.success.main};
+  //   border: solid 1px ${theme.colors.success.main};
+  //   color: ${theme.colors.success.contrastText};
+  // `,
+  // warning: css`
+  //   background-color: ${theme.colors.warning.main};
+  //   border: solid 1px ${theme.colors.warning.main};
+  //   color: ${theme.colors.warning.contrastText};
+  // `,
+  // bad: css`
+  //   background-color: ${theme.colors.error.main};
+  //   border: solid 1px ${theme.colors.error.main};
+  //   color: ${theme.colors.error.contrastText};
+  // `,
+  // neutral: css`
+  //   background-color: ${theme.colors.secondary.main};
+  //   border: solid 1px ${theme.colors.secondary.main};
+  // `,
+  // info: css`
+  //   background-color: ${theme.colors.primary.main};
+  //   border: solid 1px ${theme.colors.primary.main};
+  //   color: ${theme.colors.primary.contrastText};
+  // `,
+  good: css`
+    color: ${theme.colors.success.main};
+  `,
+  bad: css`
+    color: ${theme.colors.error.main};
+  `,
+  warning: css`
+    color: ${theme.colors.warning.main};
+  `,
+  neutral: css`
+    color: ${theme.colors.secondary.main};
+  `,
+  info: css`
+    color: ${theme.colors.primary.main};
   `,
 });

@@ -7,10 +7,9 @@ import { setOptionAsCurrent, setOptionFromUrl } from '../state/actions';
 import { VariableAdapter } from '../adapters';
 import { QueryVariableEditor } from './QueryVariableEditor';
 import { updateQueryVariableOptions } from './actions';
-import { toVariableIdentifier } from '../state/types';
+import { ALL_VARIABLE_TEXT, toVariableIdentifier } from '../state/types';
 import { containsVariable, isAllVariable } from '../utils';
 import { optionPickerFactory } from '../pickers';
-import { ALL_VARIABLE_TEXT } from '../constants';
 
 export const createQueryVariableAdapter = (): VariableAdapter<QueryVariableModel> => {
   return {

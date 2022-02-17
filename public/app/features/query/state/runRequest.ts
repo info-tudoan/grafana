@@ -143,8 +143,7 @@ export function runRequest(
     }),
     // handle errors
     catchError((err) => {
-      const errLog = typeof err === 'string' ? err : JSON.stringify(err);
-      console.error('runRequest.catchError', errLog);
+      console.error('runRequest.catchError', err);
       return of({
         ...state.panelData,
         state: LoadingState.Error,
@@ -182,19 +181,6 @@ export function callQueryMethod(
   return from(returnVal);
 }
 
-function getProcessedDataFrame(data: DataQueryResponseData): DataFrame {
-  const dataFrame = guessFieldTypes(toDataFrame(data));
-
-  if (dataFrame.fields && dataFrame.fields.length) {
-    // clear out the cached info
-    for (const field of dataFrame.fields) {
-      field.state = null;
-    }
-  }
-
-  return dataFrame;
-}
-
 /**
  * All panels will be passed tables that have our best guess at column type set
  *
@@ -205,7 +191,22 @@ export function getProcessedDataFrames(results?: DataQueryResponseData[]): DataF
     return [];
   }
 
-  return results.map((data) => getProcessedDataFrame(data));
+  const dataFrames: DataFrame[] = [];
+
+  for (const result of results) {
+    const dataFrame = guessFieldTypes(toDataFrame(result));
+
+    if (dataFrame.fields && dataFrame.fields.length) {
+      // clear out the cached info
+      for (const field of dataFrame.fields) {
+        field.state = null;
+      }
+    }
+
+    dataFrames.push(dataFrame);
+  }
+
+  return dataFrames;
 }
 
 export function preProcessPanelData(data: PanelData, lastResult?: PanelData): PanelData {
@@ -226,7 +227,7 @@ export function preProcessPanelData(data: PanelData, lastResult?: PanelData): Pa
 
   // Make sure the data frames are properly formatted
   const STARTTIME = performance.now();
-  const processedDataFrames = series.map((data) => getProcessedDataFrame(data));
+  const processedDataFrames = getProcessedDataFrames(series);
   const annotationsProcessed = getProcessedDataFrames(annotations);
   const STOPTIME = performance.now();
 

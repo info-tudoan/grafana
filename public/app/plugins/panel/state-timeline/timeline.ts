@@ -41,7 +41,6 @@ export interface TimelineCoreOptions {
   colWidth?: number;
   theme: GrafanaTheme2;
   showValue: VisibilityMode;
-  mergeValues?: boolean;
   isDiscrete: (seriesIdx: number) => boolean;
   getValueColor: (seriesIdx: number, value: any) => string;
   label: (seriesIdx: number) => string;
@@ -63,7 +62,6 @@ export function getConfig(opts: TimelineCoreOptions) {
     rowHeight = 0,
     colWidth = 0,
     showValue,
-    mergeValues = false,
     theme,
     label,
     formatValue,
@@ -214,16 +212,11 @@ export function getConfig(opts: TimelineCoreOptions) {
         walk(rowHeight, sidx - 1, numSeries, yDim, (iy, y0, height) => {
           if (mode === TimelineMode.Changes) {
             for (let ix = 0; ix < dataY.length; ix++) {
-              let yVal = dataY[ix];
-
-              if (yVal != null) {
+              if (dataY[ix] != null) {
                 let left = Math.round(valToPosX(dataX[ix], scaleX, xDim, xOff));
 
                 let nextIx = ix;
-                while (
-                  ++nextIx < dataY.length &&
-                  (dataY[nextIx] === undefined || (mergeValues && dataY[nextIx] === yVal))
-                ) {}
+                while (dataY[++nextIx] === undefined && nextIx < dataY.length) {}
 
                 // to now (not to end of chart)
                 let right =
@@ -243,7 +236,7 @@ export function getConfig(opts: TimelineCoreOptions) {
                   strokeWidth,
                   iy,
                   ix,
-                  yVal,
+                  dataY[ix],
                   discrete
                 );
 

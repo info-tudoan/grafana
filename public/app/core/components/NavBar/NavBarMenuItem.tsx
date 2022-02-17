@@ -10,23 +10,11 @@ export interface Props {
   onClick?: () => void;
   styleOverrides?: string;
   target?: HTMLAnchorElement['target'];
-  text: React.ReactNode;
+  text: string;
   url?: string;
-  adjustHeightForBorder?: boolean;
-  isMobile?: boolean;
 }
 
-export function NavBarMenuItem({
-  icon,
-  isActive,
-  isDivider,
-  onClick,
-  styleOverrides,
-  target,
-  text,
-  url,
-  isMobile = false,
-}: Props) {
+export function NavBarMenuItem({ icon, isActive, isDivider, onClick, styleOverrides, target, text, url }: Props) {
   const theme = useTheme2();
   const styles = getStyles(theme, isActive, styleOverrides);
 
@@ -43,7 +31,7 @@ export function NavBarMenuItem({
   );
 
   let element = (
-    <button className={styles.element} onClick={onClick} tabIndex={-1}>
+    <button className={styles.element} onClick={onClick}>
       {linkContent}
     </button>
   );
@@ -51,28 +39,17 @@ export function NavBarMenuItem({
   if (url) {
     element =
       !target && url.startsWith('/') ? (
-        <Link className={styles.element} href={url} target={target} onClick={onClick} tabIndex={!isMobile ? -1 : 0}>
+        <Link className={styles.element} href={url} target={target} onClick={onClick}>
           {linkContent}
         </Link>
       ) : (
-        <a href={url} target={target} className={styles.element} onClick={onClick} tabIndex={!isMobile ? -1 : 0}>
+        <a href={url} target={target} className={styles.element} onClick={onClick}>
           {linkContent}
         </a>
       );
   }
-  if (isMobile) {
-    return isDivider ? (
-      <li data-testid="dropdown-child-divider" className={styles.divider} tabIndex={-1} aria-disabled />
-    ) : (
-      <li>{element}</li>
-    );
-  }
 
-  return isDivider ? (
-    <div data-testid="dropdown-child-divider" className={styles.divider} tabIndex={-1} aria-disabled />
-  ) : (
-    <>{element}</>
-  );
+  return isDivider ? <li data-testid="dropdown-child-divider" className={styles.divider} /> : <li>{element}</li>;
 }
 
 NavBarMenuItem.displayName = 'NavBarMenuItem';
@@ -122,7 +99,6 @@ const getStyles = (theme: GrafanaTheme2, isActive: Props['isActive'], styleOverr
       border-radius: 2px;
       background-image: ${theme.colors.gradients.brandVertical};
     }
-
     ${styleOverrides};
   `,
   externalLinkIcon: css`

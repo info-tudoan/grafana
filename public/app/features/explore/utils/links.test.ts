@@ -9,25 +9,10 @@ import {
   LinkModel,
   TimeRange,
 } from '@grafana/data';
-import { setTemplateSrv } from '@grafana/runtime';
 import { setLinkSrv } from '../../panel/panellinks/link_srv';
 import { setContextSrv } from '../../../core/services/context_srv';
 
 describe('getFieldLinksForExplore', () => {
-  beforeEach(() => {
-    setTemplateSrv({
-      replace(target, scopedVars, format) {
-        return target ?? '';
-      },
-      getVariables() {
-        return [];
-      },
-      containsTemplate() {
-        return false;
-      },
-    });
-  });
-
   it('returns correct link model for external link', () => {
     const { field, range } = setup({
       title: 'external',
@@ -58,11 +43,6 @@ describe('getFieldLinksForExplore', () => {
         query: { query: 'query_1' },
         datasourceUid: 'uid_1',
         datasourceName: 'test_ds',
-        panelsState: {
-          trace: {
-            spanId: 'abcdef',
-          },
-        },
       },
     });
     const splitfn = jest.fn();
@@ -70,7 +50,7 @@ describe('getFieldLinksForExplore', () => {
 
     expect(links[0].href).toBe(
       `/explore?left=${encodeURIComponent(
-        '{"range":{"from":"now-1h","to":"now"},"datasource":"test_ds","queries":[{"query":"query_1"}],"panelsState":{"trace":{"spanId":"abcdef"}}}'
+        '{"range":{"from":"now-1h","to":"now"},"datasource":"test_ds","queries":[{"query":"query_1"}]}'
       )}`
     );
     expect(links[0].title).toBe('test_ds');
@@ -83,11 +63,6 @@ describe('getFieldLinksForExplore', () => {
       datasourceUid: 'uid_1',
       query: { query: 'query_1' },
       range,
-      panelsState: {
-        trace: {
-          spanId: 'abcdef',
-        },
-      },
     });
   });
 

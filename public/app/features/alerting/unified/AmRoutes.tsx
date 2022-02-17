@@ -17,7 +17,6 @@ import { AmRouteReceiver, FormAmRoute } from './types/amroutes';
 import { amRouteToFormAmRoute, formAmRouteToAmRoute, stringsToSelectableValues } from './utils/amroutes';
 import { initialAsyncRequestState } from './utils/redux';
 import { isVanillaPrometheusAlertManagerDataSource } from './utils/datasource';
-import { MuteTimingsTable } from './components/amroutes/MuteTimingsTable';
 
 const AmRoutes: FC = () => {
   const dispatch = useDispatch();
@@ -39,11 +38,8 @@ const AmRoutes: FC = () => {
     fetchConfig();
   }, [fetchConfig]);
 
-  const {
-    result,
-    loading: resultLoading,
-    error: resultError,
-  } = (alertManagerSourceName && amConfigs[alertManagerSourceName]) || initialAsyncRequestState;
+  const { result, loading: resultLoading, error: resultError } =
+    (alertManagerSourceName && amConfigs[alertManagerSourceName]) || initialAsyncRequestState;
 
   const config = result?.alertmanager_config;
   const [rootRoute, id2ExistingRoute] = useMemo(() => amRouteToFormAmRoute(config?.route), [config?.route]);
@@ -128,8 +124,6 @@ const AmRoutes: FC = () => {
             receivers={receivers}
             routes={rootRoute}
           />
-          <div className={styles.break} />
-          <MuteTimingsTable alertManagerSourceName={alertManagerSourceName} />
         </>
       )}
     </AlertingPageWrapper>

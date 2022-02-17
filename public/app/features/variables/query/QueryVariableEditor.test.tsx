@@ -5,24 +5,27 @@ import { DataSourceApi } from '@grafana/data';
 
 import { Props, QueryVariableEditorUnConnected } from './QueryVariableEditor';
 import { initialQueryVariableModelState } from './reducer';
+import { initialVariableEditorState } from '../editor/reducer';
 import { describe, expect } from '../../../../test/lib/common';
+import { NEW_VARIABLE_ID } from '../state/types';
 import { LegacyVariableQueryEditor } from '../editor/LegacyVariableQueryEditor';
 import { mockDataSource } from 'app/features/alerting/unified/mocks';
 import { DataSourceType } from 'app/features/alerting/unified/utils/datasource';
-import { NEW_VARIABLE_ID } from '../constants';
 
 const setupTestContext = (options: Partial<Props>) => {
-  const extended = {
-    VariableQueryEditor: LegacyVariableQueryEditor,
-    dataSource: {} as unknown as DataSourceApi,
-  };
   const defaults: Props = {
     variable: { ...initialQueryVariableModelState },
     initQueryVariableEditor: jest.fn(),
     changeQueryVariableDataSource: jest.fn(),
     changeQueryVariableQuery: jest.fn(),
     changeVariableMultiValue: jest.fn(),
-    extended,
+    editor: {
+      ...initialVariableEditorState,
+      extended: {
+        VariableQueryEditor: LegacyVariableQueryEditor,
+        dataSource: ({} as unknown) as DataSourceApi,
+      },
+    },
     onPropChange: jest.fn(),
   };
 
@@ -103,7 +106,7 @@ describe('QueryVariableEditor', () => {
 const getQueryField = () =>
   screen.getByRole('textbox', { name: /variable editor form default variable query editor textarea/i });
 
-const getRegExField = () => screen.getByLabelText('Regex');
+const getRegExField = () => screen.getByRole('textbox', { name: /variable editor form query regex field/i });
 
 const fieldAccessors: Record<string, () => HTMLElement> = {
   query: getQueryField,

@@ -144,10 +144,6 @@ export class ShiftTimeEvent extends BusEventWithPayload<ShiftTimeEventPayload> {
   static type = 'shift-time';
 }
 
-export class AbsoluteTimeEvent extends BusEventBase {
-  static type = 'absolute-time';
-}
-
 export class RemovePanelEvent extends BusEventWithPayload<number> {
   static type = 'remove-panel';
 }

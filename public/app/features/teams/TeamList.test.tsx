@@ -3,16 +3,10 @@ import { shallow } from 'enzyme';
 import { Props, TeamList } from './TeamList';
 import { OrgRole, Team } from '../../types';
 import { getMockTeam, getMultipleMockTeams } from './__mocks__/teamMocks';
-import { contextSrv, User } from 'app/core/services/context_srv';
+import { User } from 'app/core/services/context_srv';
 import { NavModel } from '@grafana/data';
 import { mockToolkitActionCreator } from 'test/core/redux/mocks';
-import { setSearchQuery, setTeamsSearchPage } from './state/reducers';
-
-jest.mock('app/core/config', () => {
-  return {
-    featureToggles: { accesscontrol: false },
-  };
-});
+import { setSearchQuery } from './state/reducers';
 
 const setup = (propOverrides?: object) => {
   const props: Props = {
@@ -28,9 +22,7 @@ const setup = (propOverrides?: object) => {
     loadTeams: jest.fn(),
     deleteTeam: jest.fn(),
     setSearchQuery: mockToolkitActionCreator(setSearchQuery),
-    setTeamsSearchPage: mockToolkitActionCreator(setTeamsSearchPage),
     searchQuery: '',
-    searchPage: 1,
     teamsCount: 0,
     hasFetched: false,
     editorsCanAdmin: false,
@@ -41,8 +33,6 @@ const setup = (propOverrides?: object) => {
   };
 
   Object.assign(props, propOverrides);
-
-  contextSrv.user = props.signedInUser;
 
   const wrapper = shallow(<TeamList {...props} />);
   const instance = wrapper.instance() as TeamList;

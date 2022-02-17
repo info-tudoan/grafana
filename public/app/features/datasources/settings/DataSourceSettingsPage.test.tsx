@@ -13,7 +13,6 @@ jest.mock('app/core/core', () => {
   return {
     contextSrv: {
       hasPermission: () => true,
-      hasPermissionInMetadata: () => true,
     },
   };
 });

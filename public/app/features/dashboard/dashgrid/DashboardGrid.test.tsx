@@ -3,13 +3,6 @@ import { shallow, ShallowWrapper } from 'enzyme';
 import { DashboardGrid, Props } from './DashboardGrid';
 import { DashboardModel } from '../state';
 
-jest.mock('app/features/dashboard/dashgrid/LazyLoader', () => {
-  const LazyLoader: React.FC = ({ children }) => {
-    return <>{children}</>;
-  };
-  return { LazyLoader };
-});
-
 interface ScenarioContext {
   props: Props;
   wrapper?: ShallowWrapper<Props, any, DashboardGrid>;
@@ -66,6 +59,7 @@ function dashboardGridScenario(description: string, scenarioFn: (ctx: ScenarioCo
       props: {
         editPanel: null,
         viewPanel: null,
+        scrollTop: 0,
         dashboard: getTestDashboard(),
       },
       setProps: (props: Partial<Props>) => {

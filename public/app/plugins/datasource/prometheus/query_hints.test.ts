@@ -23,7 +23,7 @@ describe('getQueryHints()', () => {
 
     expect(hints!.length).toBe(1);
     expect(hints![0]).toMatchObject({
-      label: 'Selected metric looks like a counter.',
+      label: 'Metric metric_total looks like a counter.',
       fix: {
         action: {
           type: 'ADD_RATE',
@@ -48,7 +48,7 @@ describe('getQueryHints()', () => {
     let hints = getQueryHints('foo', series, datasource);
     expect(hints!.length).toBe(1);
     expect(hints![0]).toMatchObject({
-      label: 'Selected metric is a counter.',
+      label: 'Metric foo is a counter.',
       fix: {
         action: {
           type: 'ADD_RATE',
@@ -88,21 +88,6 @@ describe('getQueryHints()', () => {
     expect(hints).toEqual([]);
   });
 
-  it('returns a rate hint with action for a counter metric with labels', () => {
-    const series = [
-      {
-        datapoints: [
-          [23, 1000],
-          [24, 1001],
-        ],
-      },
-    ];
-    const hints = getQueryHints('metric_total{job="grafana"}', series);
-    expect(hints!.length).toBe(1);
-    expect(hints![0].label).toContain('Selected metric looks like a counter');
-    expect(hints![0].fix).toBeDefined();
-  });
-
   it('returns a rate hint w/o action for a complex counter metric', () => {
     const series = [
       {
@@ -123,7 +108,7 @@ describe('getQueryHints()', () => {
     const hints = getQueryHints('metric_bucket', series);
     expect(hints!.length).toBe(1);
     expect(hints![0]).toMatchObject({
-      label: 'Selected metric has buckets.',
+      label: 'Time series has buckets, you probably wanted a histogram.',
       fix: {
         action: {
           type: 'ADD_HISTOGRAM_QUANTILE',
@@ -131,21 +116,6 @@ describe('getQueryHints()', () => {
         },
       },
     });
-  });
-
-  it('returns a histogram hint with action for a bucket with labels', () => {
-    const series = [
-      {
-        datapoints: [
-          [23, 1000],
-          [24, 1001],
-        ],
-      },
-    ];
-    const hints = getQueryHints('metric_bucket{job="grafana"}', series);
-    expect(hints!.length).toBe(1);
-    expect(hints![0].label).toContain('Selected metric has buckets.');
-    expect(hints![0].fix).toBeDefined();
   });
 
   it('returns a sum hint when many time series results are returned for a simple metric', () => {

@@ -20,12 +20,7 @@ import { getConfig } from 'app/core/config';
 import { DashboardSearchHit } from 'app/features/search/types';
 import { FolderDTO } from 'app/types';
 import { ContextSrv, contextSrv } from './context_srv';
-import {
-  isContentTypeApplicationJson,
-  parseInitFromOptions,
-  parseResponseBody,
-  parseUrlFromOptions,
-} from '../utils/fetch';
+import { parseInitFromOptions, parseResponseBody, parseUrlFromOptions } from '../utils/fetch';
 import { isDataQuery, isLocalUrl } from '../utils/query';
 import { FetchQueue } from './FetchQueue';
 import { ResponseQueue } from './ResponseQueue';
@@ -192,9 +187,7 @@ export class BackendSrv implements BackendService {
       mergeMap(async (response) => {
         const { status, statusText, ok, headers, url, type, redirected } = response;
 
-        const responseType = options.responseType ?? (isContentTypeApplicationJson(headers) ? 'json' : undefined);
-
-        const data = await parseResponseBody<T>(response, responseType);
+        const data = await parseResponseBody<T>(response, options.responseType);
         const fetchResponse: FetchResponse<T> = {
           status,
           statusText,

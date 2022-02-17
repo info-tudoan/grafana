@@ -65,7 +65,6 @@
   "metrics": true,
   "alerting": true,
   "annotations": true,
-  "backend": true,
   "queryOptions": {
     "minInterval": true
   },

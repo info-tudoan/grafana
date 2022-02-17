@@ -44,7 +44,6 @@ exports[`Render should render component 1`] = `
         >
           <Input
             className="gf-form-input width-30"
-            disabled={false}
             onChange={[Function]}
             placeholder="cn=ops,ou=groups,dc=grafana,dc=org"
             type="text"
@@ -65,7 +64,6 @@ exports[`Render should render component 1`] = `
     </div>
   </SlideDown>
   <EmptyListCTA
-    buttonDisabled={false}
     buttonIcon="users-alt"
     buttonTitle="Add Group"
     onClick={[Function]}
@@ -102,7 +100,6 @@ exports[`Render should render groups table 1`] = `
     />
     <Button
       className="pull-right"
-      disabled={false}
       onClick={[Function]}
     >
       <Icon
@@ -132,7 +129,6 @@ exports[`Render should render groups table 1`] = `
         >
           <Input
             className="gf-form-input width-30"
-            disabled={false}
             onChange={[Function]}
             placeholder="cn=ops,ou=groups,dc=grafana,dc=org"
             type="text"
@@ -187,7 +183,6 @@ exports[`Render should render groups table 1`] = `
             }
           >
             <Button
-              disabled={false}
               onClick={[Function]}
               size="sm"
               variant="destructive"
@@ -212,7 +207,6 @@ exports[`Render should render groups table 1`] = `
             }
           >
             <Button
-              disabled={false}
               onClick={[Function]}
               size="sm"
               variant="destructive"
@@ -237,7 +231,6 @@ exports[`Render should render groups table 1`] = `
             }
           >
             <Button
-              disabled={false}
               onClick={[Function]}
               size="sm"
               variant="destructive"

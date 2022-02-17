@@ -20,7 +20,6 @@ export interface TestDataQuery extends DataQuery {
   nodes?: NodesQuery;
   csvFileName?: string;
   csvContent?: string;
-  rawFrameContent?: string;
   usa?: USAQuery;
 }
 

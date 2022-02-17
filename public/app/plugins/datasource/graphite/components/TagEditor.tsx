@@ -37,10 +37,9 @@ export function TagEditor({ tag, tagIndex, state }: Props) {
     },
     [state, tagIndex, tag]
   );
-  const debouncedGetTagValueOptions = useMemo(
-    () => debounce(getTagValueOptions, 200, { leading: true }),
-    [getTagValueOptions]
-  );
+  const debouncedGetTagValueOptions = useMemo(() => debounce(getTagValueOptions, 200, { leading: true }), [
+    getTagValueOptions,
+  ]);
 
   return (
     <>

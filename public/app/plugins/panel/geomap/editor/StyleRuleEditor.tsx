@@ -152,7 +152,7 @@ export const StyleRuleEditor: FC<StandardEditorProps<FeatureStyleConfig, any, an
             options={comparators}
             onChange={onChangeComparison}
             aria-label={'Comparison operator'}
-            width={8}
+            width={6}
           />
         </InlineField>
         <InlineField className={styles.inline} grow={true}>

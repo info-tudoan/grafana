@@ -29,7 +29,7 @@ export function QueryVariableSortSelect({ onChange, sort }: PropsWithChildren<Pr
       options={SORT_OPTIONS}
       onChange={onChange}
       labelWidth={10}
-      testId={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsSortSelectV2}
+      ariaLabel={selectors.pages.Dashboard.Settings.Variables.Edit.QueryVariable.queryOptionsSortSelect}
       tooltip="How to sort the values of this variable."
     />
   );

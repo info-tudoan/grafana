@@ -1,6 +1,5 @@
 import { Input, InlineField, Select, InlineSwitch } from '@grafana/ui';
-import { uniqueId } from 'lodash';
-import React, { useRef } from 'react';
+import React from 'react';
 import { useDispatch } from '../../../../hooks/useStatelessReducer';
 import { movingAvgModelOptions } from '../../../../query_def';
 import { isEWMAMovingAverage, isHoltMovingAverage, isHoltWintersMovingAverage, MovingAverage } from '../aggregations';
@@ -16,13 +15,11 @@ interface Props {
 // as they might be incompatible. We should clear all other options on model change.
 export const MovingAverageSettingsEditor = ({ metric }: Props) => {
   const dispatch = useDispatch();
-  const { current: baseId } = useRef(uniqueId('es-moving-avg-'));
 
   return (
     <>
       <InlineField label="Model" labelWidth={16}>
         <Select
-          inputId={`${baseId}-model`}
           menuShouldPortal
           onChange={(value) => dispatch(changeMetricSetting({ metric, settingName: 'model', newValue: value.value }))}
           options={movingAvgModelOptions}
@@ -37,7 +34,6 @@ export const MovingAverageSettingsEditor = ({ metric }: Props) => {
       {(isEWMAMovingAverage(metric) || isHoltMovingAverage(metric) || isHoltWintersMovingAverage(metric)) && (
         <InlineField label="Alpha" labelWidth={16}>
           <Input
-            id={`${baseId}-alpha`}
             onBlur={(e) =>
               dispatch(
                 changeMetricSetting({
@@ -58,7 +54,6 @@ export const MovingAverageSettingsEditor = ({ metric }: Props) => {
       {(isHoltMovingAverage(metric) || isHoltWintersMovingAverage(metric)) && (
         <InlineField label="Beta" labelWidth={16}>
           <Input
-            id={`${baseId}-beta`}
             onBlur={(e) =>
               dispatch(
                 changeMetricSetting({
@@ -80,7 +75,6 @@ export const MovingAverageSettingsEditor = ({ metric }: Props) => {
         <>
           <InlineField label="Gamma" labelWidth={16}>
             <Input
-              id={`${baseId}-gamma`}
               onBlur={(e) =>
                 dispatch(
                   changeMetricSetting({
@@ -98,7 +92,6 @@ export const MovingAverageSettingsEditor = ({ metric }: Props) => {
           </InlineField>
           <InlineField label="Period" labelWidth={16}>
             <Input
-              id={`${baseId}-period`}
               onBlur={(e) =>
                 dispatch(
                   changeMetricSetting({
@@ -117,7 +110,6 @@ export const MovingAverageSettingsEditor = ({ metric }: Props) => {
 
           <InlineField label="Pad" labelWidth={16}>
             <InlineSwitch
-              id={`${baseId}-pad`}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 dispatch(
                   changeMetricSetting({
@@ -136,7 +128,6 @@ export const MovingAverageSettingsEditor = ({ metric }: Props) => {
       {(isEWMAMovingAverage(metric) || isHoltMovingAverage(metric) || isHoltWintersMovingAverage(metric)) && (
         <InlineField label="Minimize" labelWidth={16}>
           <InlineSwitch
-            id={`${baseId}-minimize`}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               dispatch(changeMetricSetting({ metric, settingName: 'minimize', newValue: e.target.checked }))
             }

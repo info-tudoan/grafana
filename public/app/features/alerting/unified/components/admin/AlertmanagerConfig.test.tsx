@@ -1,4 +1,5 @@
 import React from 'react';
+import { typeAsJestMock } from 'test/helpers/typeAsJestMock';
 import { getAllDataSources } from '../../utils/config';
 import {
   fetchAlertManagerConfig,
@@ -35,13 +36,13 @@ jest.mock('../../api/grafana');
 jest.mock('../../utils/config');
 
 const mocks = {
-  getAllDataSources: jest.mocked(getAllDataSources),
+  getAllDataSources: typeAsJestMock(getAllDataSources),
 
   api: {
-    fetchConfig: jest.mocked(fetchAlertManagerConfig),
-    deleteAlertManagerConfig: jest.mocked(deleteAlertManagerConfig),
-    updateAlertManagerConfig: jest.mocked(updateAlertManagerConfig),
-    fetchStatus: jest.mocked(fetchStatus),
+    fetchConfig: typeAsJestMock(fetchAlertManagerConfig),
+    deleteAlertManagerConfig: typeAsJestMock(deleteAlertManagerConfig),
+    updateAlertManagerConfig: typeAsJestMock(updateAlertManagerConfig),
+    fetchStatus: typeAsJestMock(fetchStatus),
   },
 };
 

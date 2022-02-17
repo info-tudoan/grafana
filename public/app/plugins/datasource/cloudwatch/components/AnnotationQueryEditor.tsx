@@ -1,11 +1,15 @@
 import React, { ChangeEvent } from 'react';
-import { PanelData } from '@grafana/data';
-import { EditorField, EditorHeader, EditorRow, InlineSelect, Space } from '@grafana/experimental';
-import { Input, Switch } from '@grafana/ui';
-import { CloudWatchDatasource } from '../datasource';
-import { useRegions } from '../hooks';
+import { Switch, Input } from '@grafana/ui';
 import { CloudWatchAnnotationQuery, CloudWatchMetricsQuery } from '../types';
+import { PanelData } from '@grafana/data';
+import { CloudWatchDatasource } from '../datasource';
 import { MetricStatEditor } from './MetricStatEditor';
+import EditorHeader from './ui/EditorHeader';
+import InlineSelect from './ui/InlineSelect';
+import { Space } from './ui/Space';
+import { useRegions } from '../hooks';
+import EditorRow from './ui/EditorRow';
+import EditorField from './ui/EditorField';
 
 export type Props = {
   query: CloudWatchAnnotationQuery;

@@ -11,14 +11,14 @@ export function getQueryHints(query: string, series?: any[], datasource?: Promet
   const hints = [];
 
   // ..._bucket metric needs a histogram_quantile()
-  const histogramMetric = query.trim().match(/^\w+_bucket$|^\w+_bucket{.*}$/);
+  const histogramMetric = query.trim().match(/^\w+_bucket$/);
   if (histogramMetric) {
-    const label = 'Selected metric has buckets.';
+    const label = 'Time series has buckets, you probably wanted a histogram.';
     hints.push({
       type: 'HISTOGRAM_QUANTILE',
       label,
       fix: {
-        label: 'Consider calculating aggregated quantile by adding histogram_quantile().',
+        label: 'Fix by adding histogram_quantile().',
         action: {
           type: 'ADD_HISTOGRAM_QUANTILE',
           query,
@@ -53,22 +53,21 @@ export function getQueryHints(query: string, series?: any[], datasource?: Promet
     }
 
     if (counterNameMetric) {
-      // FixableQuery consists of metric name and optionally label-value pairs. We are not offering fix for complex queries yet.
-      const fixableQuery = query.trim().match(/^\w+$|^\w+{.*}$/);
+      const simpleMetric = query.trim().match(/^\w+$/);
       const verb = certain ? 'is' : 'looks like';
-      let label = `Selected metric ${verb} a counter.`;
+      let label = `Metric ${counterNameMetric} ${verb} a counter.`;
       let fix: QueryFix | undefined;
 
-      if (fixableQuery) {
+      if (simpleMetric) {
         fix = {
-          label: 'Consider calculating rate of counter by adding rate().',
+          label: 'Fix by adding rate().',
           action: {
             type: 'ADD_RATE',
             query,
           },
         };
       } else {
-        label = `${label} Consider calculating rate of counter by adding rate().`;
+        label = `${label} Try applying a rate() function.`;
       }
 
       hints.push({
@@ -96,14 +95,14 @@ export function getQueryHints(query: string, series?: any[], datasource?: Promet
       hints.push({
         type: 'EXPAND_RULES',
         label,
-        fix: {
+        fix: ({
           label: 'Expand rules',
           action: {
             type: 'EXPAND_RULES',
             query,
             mapping: mappingForQuery,
           },
-        } as any as QueryFix,
+        } as any) as QueryFix,
       });
     }
   }

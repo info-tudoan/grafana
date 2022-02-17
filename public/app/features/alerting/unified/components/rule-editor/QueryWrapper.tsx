@@ -71,7 +71,6 @@ export const QueryWrapper: FC<Props> = ({
   return (
     <div className={styles.wrapper}>
       <QueryEditorRow<DataQuery>
-        alerting
         dataSource={dsSettings}
         onChangeDataSource={!isExpression ? (settings) => onChangeDataSource(settings, index) : undefined}
         id={query.refId}
@@ -103,16 +102,12 @@ export const QueryWrapper: FC<Props> = ({
   );
 };
 
-export const EmptyQueryWrapper: FC<{}> = ({ children }) => {
-  const styles = useStyles2(getStyles);
-  return <div className={styles.wrapper}>{children}</div>;
-};
-
 const getStyles = (theme: GrafanaTheme2) => ({
   wrapper: css`
     label: AlertingQueryWrapper;
     margin-bottom: ${theme.spacing(1)};
     border: 1px solid ${theme.colors.border.medium};
     border-radius: ${theme.shape.borderRadius(1)};
+    padding-bottom: ${theme.spacing(1)};
   `,
 });

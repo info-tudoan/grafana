@@ -1,7 +1,7 @@
 {
-  "title": "Grafana",
+  "title": "WY Engage",
   "tags": [],
-  "style": "dark",
+  "style": "light",
   "timezone": "browser",
   "editable": true,
   "rows": [
@@ -24,7 +24,7 @@
       ]
     },
     {
-      "title": "Welcome to Grafana",
+      "title": "Welcome to WY Engage",
       "height": "210px",
       "collapse": false,
       "editable": true,

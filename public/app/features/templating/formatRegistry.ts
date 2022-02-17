@@ -2,7 +2,9 @@ import kbn from 'app/core/utils/kbn';
 import { dateTime, Registry, RegistryItem, textUtil, VariableModel } from '@grafana/data';
 import { isArray, map, replace } from 'lodash';
 import { formatVariableLabel } from '../variables/shared/formatVariable';
-import { ALL_VARIABLE_TEXT, ALL_VARIABLE_VALUE } from '../variables/constants';
+import { ALL_VARIABLE_TEXT, ALL_VARIABLE_VALUE } from '../variables/state/types';
+import { variableAdapters } from '../variables/adapters';
+import { VariableModel as ExtendedVariableModel } from '../variables/types';
 
 export interface FormatOptions {
   value: any;
@@ -242,14 +244,15 @@ export const formatRegistry = new Registry<FormatRegistryItem>(() => {
       description:
         'Format variables as URL parameters. Example in multi-variable scenario A + B + C => var-foo=A&var-foo=B&var-foo=C.',
       formatter: (options, variable) => {
-        const { value } = options;
-        const { name } = variable;
+        const { name, type } = variable;
+        const adapter = variableAdapters.get(type);
+        const valueForUrl = adapter.getValueForUrl(variable as ExtendedVariableModel);
 
-        if (Array.isArray(value)) {
-          return value.map((v) => formatQueryParameter(name, v)).join('&');
+        if (Array.isArray(valueForUrl)) {
+          return valueForUrl.map((v) => formatQueryParameter(name, v)).join('&');
         }
 
-        return formatQueryParameter(name, value);
+        return formatQueryParameter(name, valueForUrl);
       },
     },
   ];

@@ -17,7 +17,7 @@ describe('OpenTsQueryCtrl', () => {
     refresh: () => {},
   };
 
-  Object.assign(OpenTsQueryCtrl.prototype, ctx);
+  OpenTsQueryCtrl.prototype = Object.assign(OpenTsQueryCtrl.prototype, ctx);
 
   beforeEach(() => {
     ctx.ctrl = new OpenTsQueryCtrl({}, {} as any);

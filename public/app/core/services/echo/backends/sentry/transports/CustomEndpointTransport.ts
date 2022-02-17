@@ -1,13 +1,6 @@
 import { Event, Severity } from '@sentry/browser';
-import {
-  logger,
-  makePromiseBuffer,
-  parseRetryAfterHeader,
-  PromiseBuffer,
-  supportsReferrerPolicy,
-  SyncPromise,
-} from '@sentry/utils';
-import { Response } from '@sentry/types';
+import { logger, parseRetryAfterHeader, PromiseBuffer, supportsReferrerPolicy, SyncPromise } from '@sentry/utils';
+import { Response, Status } from '@sentry/types';
 import { BaseTransport } from '../types';
 
 export interface CustomEndpointTransportOptions {
@@ -32,7 +25,7 @@ export class CustomEndpointTransport implements BaseTransport {
   private readonly _buffer: PromiseBuffer<Response>;
 
   constructor(public options: CustomEndpointTransportOptions) {
-    this._buffer = makePromiseBuffer(options.maxConcurrentRequests ?? DEFAULT_MAX_CONCURRENT_REQUESTS);
+    this._buffer = new PromiseBuffer(options.maxConcurrentRequests ?? DEFAULT_MAX_CONCURRENT_REQUESTS);
   }
 
   sendEvent(event: Event): PromiseLike<Response> {
@@ -42,7 +35,7 @@ export class CustomEndpointTransport implements BaseTransport {
       return Promise.resolve({
         event,
         reason,
-        status: 'skipped',
+        status: Status.Skipped,
       });
     }
 
@@ -88,42 +81,41 @@ export class CustomEndpointTransport implements BaseTransport {
       Object.assign(options, this.options.fetchParameters);
     }
 
-    return this._buffer
-      .add(
-        () =>
-          new SyncPromise<Response>((resolve, reject) => {
-            window
-              .fetch(sentryReq.url, options)
-              .then((response) => {
-                if (response.status === 200) {
-                  resolve({ status: 'success' });
-                  return;
-                }
-
-                if (response.status === 429) {
-                  const now = Date.now();
-                  const retryAfterHeader = response.headers.get('Retry-After');
-                  this._disabledUntil = new Date(now + parseRetryAfterHeader(now, retryAfterHeader));
-                  logger.warn(`Too many requests, backing off till: ${this._disabledUntil}`);
-                }
-
-                reject(response);
-              })
-              .catch(reject);
-          })
-      )
-      .then(undefined, (reason) => {
-        if (reason.message === 'Not adding Promise due to buffer limit reached.') {
-          const msg = `Dropping frontend log event due to too many requests in flight.`;
-          console.warn(msg);
-          return {
-            event,
-            reason: msg,
-            status: 'skipped',
-          };
-        }
-        throw reason;
+    if (!this._buffer.isReady()) {
+      const reason = `Dropping frontend log event due to too many requests in flight.`;
+      console.warn(reason);
+      return Promise.resolve({
+        event,
+        reason,
+        status: Status.Skipped,
       });
+    }
+
+    return this._buffer.add(
+      () =>
+        new SyncPromise<Response>((resolve, reject) => {
+          window
+            .fetch(sentryReq.url, options)
+            .then((response) => {
+              const status = Status.fromHttpCode(response.status);
+
+              if (status === Status.Success) {
+                resolve({ status });
+                return;
+              }
+
+              if (status === Status.RateLimit) {
+                const now = Date.now();
+                const retryAfterHeader = response.headers.get('Retry-After');
+                this._disabledUntil = new Date(now + parseRetryAfterHeader(now, retryAfterHeader));
+                logger.warn(`Too many requests, backing off till: ${this._disabledUntil}`);
+              }
+
+              reject(response);
+            })
+            .catch(reject);
+        })
+    );
   }
 }
 

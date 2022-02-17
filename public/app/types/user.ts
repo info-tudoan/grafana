@@ -1,6 +1,7 @@
 import { OrgRole } from '.';
-import { SelectableValue, WithAccessControlMetadata } from '@grafana/data';
-export interface OrgUser extends WithAccessControlMetadata {
+import { SelectableValue } from '@grafana/data';
+
+export interface OrgUser {
   avatarUrl: string;
   email: string;
   lastSeenAt: string;
@@ -24,7 +25,7 @@ export interface User {
 
 export type Unit = { name: string; url: string };
 
-export interface UserDTO extends WithAccessControlMetadata {
+export interface UserDTO {
   id: number;
   login: string;
   email: string;

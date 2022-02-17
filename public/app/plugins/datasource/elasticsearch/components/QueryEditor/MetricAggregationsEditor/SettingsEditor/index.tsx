@@ -1,5 +1,5 @@
 import { InlineField, Input, InlineSwitch, Select } from '@grafana/ui';
-import React, { ComponentProps, useRef, useState } from 'react';
+import React, { ComponentProps, useState } from 'react';
 import { extendedStats } from '../../../../query_def';
 import { useDispatch } from '../../../../hooks/useStatelessReducer';
 import { changeMetricMeta, changeMetricSetting } from '../state/actions';
@@ -30,8 +30,6 @@ interface Props {
 }
 
 export const SettingsEditor = ({ metric, previousMetrics }: Props) => {
-  const { current: baseId } = useRef(uniqueId('es-setting-'));
-
   const dispatch = useDispatch();
   const description = useDescription(metric);
   const query = useQuery();
@@ -114,7 +112,6 @@ export const SettingsEditor = ({ metric, previousMetrics }: Props) => {
       {metric.type === 'percentiles' && (
         <InlineField label="Percentiles" {...inlineFieldProps}>
           <Input
-            id={`${baseId}-percentiles-percents`}
             onBlur={(e) =>
               dispatch(
                 changeMetricSetting({

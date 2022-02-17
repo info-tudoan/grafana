@@ -167,9 +167,8 @@ export class DataSourceSettingsPage extends PureComponent<Props> {
   }
 
   renderLoadError() {
-    const { loadError, dataSource } = this.props;
-    const canDeleteDataSource =
-      !this.isReadOnly() && contextSrv.hasPermissionInMetadata(AccessControlAction.DataSourcesDelete, dataSource);
+    const { loadError } = this.props;
+    const canDeleteDataSources = !this.isReadOnly() && contextSrv.hasPermission(AccessControlAction.DataSourcesDelete);
 
     const node = {
       text: loadError!,
@@ -186,7 +185,7 @@ export class DataSourceSettingsPage extends PureComponent<Props> {
         <Page.Contents isLoading={this.props.loading}>
           {this.isReadOnly() && this.renderIsReadOnlyMessage()}
           <div className="gf-form-button-row">
-            {canDeleteDataSource && (
+            {canDeleteDataSources && (
               <Button type="submit" variant="destructive" onClick={this.onDelete}>
                 Delete
               </Button>
@@ -231,12 +230,11 @@ export class DataSourceSettingsPage extends PureComponent<Props> {
 
   renderSettings() {
     const { dataSourceMeta, setDataSourceName, setIsDefault, dataSource, plugin, testingStatus } = this.props;
-    const canWriteDataSource = contextSrv.hasPermissionInMetadata(AccessControlAction.DataSourcesWrite, dataSource);
-    const canDeleteDataSource = contextSrv.hasPermissionInMetadata(AccessControlAction.DataSourcesDelete, dataSource);
+    const canEditDataSources = contextSrv.hasPermission(AccessControlAction.DataSourcesWrite);
 
     return (
       <form onSubmit={this.onSubmit}>
-        {!canWriteDataSource && this.renderMissingEditRightsMessage()}
+        {!canEditDataSources && this.renderMissingEditRightsMessage()}
         {this.isReadOnly() && this.renderIsReadOnlyMessage()}
         {dataSourceMeta.state && (
           <div className="gf-form">
@@ -279,8 +277,7 @@ export class DataSourceSettingsPage extends PureComponent<Props> {
 
         <ButtonRow
           onSubmit={(event) => this.onSubmit(event)}
-          canSave={!this.isReadOnly() && canWriteDataSource}
-          canDelete={!this.isReadOnly() && canDeleteDataSource}
+          isReadOnly={this.isReadOnly()}
           onDelete={this.onDelete}
           onTest={(event) => this.onTest(event)}
           exploreUrl={this.onNavigateToExplore()}

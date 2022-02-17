@@ -10,7 +10,7 @@ interface VariableSelectFieldProps<T> {
   options: Array<SelectableValue<T>>;
   onChange: (option: SelectableValue<T>) => void;
   tooltip?: string;
-  testId?: string;
+  ariaLabel?: string;
   width?: number;
   labelWidth?: number;
 }
@@ -21,7 +21,7 @@ export function VariableSelectField({
   options,
   tooltip,
   onChange,
-  testId,
+  ariaLabel,
   width,
   labelWidth,
 }: PropsWithChildren<VariableSelectFieldProps<any>>): ReactElement {
@@ -34,7 +34,7 @@ export function VariableSelectField({
       <InlineFormLabel width={labelWidth ?? 6} tooltip={tooltip} htmlFor={inputId}>
         {name}
       </InlineFormLabel>
-      <div data-testid={testId}>
+      <div aria-label={ariaLabel}>
         <Select
           inputId={inputId}
           menuShouldPortal

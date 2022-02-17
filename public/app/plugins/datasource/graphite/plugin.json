@@ -12,7 +12,6 @@
   "metrics": true,
   "alerting": true,
   "annotations": true,
-  "backend": true,
 
   "queryOptions": {
     "maxDataPoints": true,

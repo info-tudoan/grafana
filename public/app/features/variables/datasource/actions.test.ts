@@ -58,13 +58,13 @@ describe('data source actions', () => {
             true
           );
 
-        tester.thenDispatchedActionsShouldEqual(
+        await tester.thenDispatchedActionsShouldEqual(
           createDataSourceOptions(
             toVariablePayload(
               { type: 'datasource', id: '0' },
               {
                 sources,
-                regex: undefined as unknown as RegExp,
+                regex: (undefined as unknown) as RegExp,
               }
             )
           ),
@@ -106,7 +106,7 @@ describe('data source actions', () => {
             true
           );
 
-        tester.thenDispatchedActionsShouldEqual(
+        await tester.thenDispatchedActionsShouldEqual(
           createDataSourceOptions(
             toVariablePayload(
               { type: 'datasource', id: '0' },
@@ -132,7 +132,7 @@ describe('data source actions', () => {
   });
 
   describe('when initDataSourceVariableEditor is dispatched', () => {
-    it('then the correct actions are dispatched', () => {
+    it('then the correct actions are dispatched', async () => {
       const meta = getMockPlugin({ name: 'mock-data-name', id: 'mock-data-id' });
       const sources: DataSourceInstanceSettings[] = [
         getDataSourceInstanceSetting('first-name', meta),
@@ -141,12 +141,13 @@ describe('data source actions', () => {
 
       const { dependencies, getListMock, getDatasourceSrvMock } = getTestContext({ sources });
 
-      reduxTester<RootReducerType>()
+      await reduxTester<RootReducerType>()
         .givenRootReducer(getRootReducer())
         .whenActionIsDispatched(initDataSourceVariableEditor(dependencies))
         .thenDispatchedActionsShouldEqual(
           changeVariableEditorExtended({
-            dataSourceTypes: [
+            propName: 'dataSourceTypes',
+            propValue: [
               { text: '', value: '' },
               { text: 'mock-data-name', value: 'mock-data-id' },
             ],

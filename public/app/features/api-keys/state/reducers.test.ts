@@ -1,11 +1,4 @@
-﻿import {
-  apiKeysLoaded,
-  apiKeysReducer,
-  includeExpiredToggled,
-  initialApiKeysState,
-  isFetching,
-  setSearchQuery,
-} from './reducers';
+﻿import { apiKeysLoaded, apiKeysReducer, initialApiKeysState, setSearchQuery } from './reducers';
 import { getMultipleMockKeys } from '../__mocks__/apiKeysMock';
 import { reducerTester } from '../../../../test/core/redux/reducerTester';
 import { ApiKeysState } from '../../../types';
@@ -14,13 +7,10 @@ describe('API Keys reducer', () => {
   it('should set keys', () => {
     reducerTester<ApiKeysState>()
       .givenReducer(apiKeysReducer, { ...initialApiKeysState })
-      .whenActionIsDispatched(
-        apiKeysLoaded({ keys: getMultipleMockKeys(4), keysIncludingExpired: getMultipleMockKeys(6) })
-      )
+      .whenActionIsDispatched(apiKeysLoaded(getMultipleMockKeys(4)))
       .thenStateShouldEqual({
         ...initialApiKeysState,
         keys: getMultipleMockKeys(4),
-        keysIncludingExpired: getMultipleMockKeys(6),
         hasFetched: true,
       });
   });
@@ -32,26 +22,6 @@ describe('API Keys reducer', () => {
       .thenStateShouldEqual({
         ...initialApiKeysState,
         searchQuery: 'test query',
-      });
-  });
-
-  it('should toggle the includeExpired state', () => {
-    reducerTester<ApiKeysState>()
-      .givenReducer(apiKeysReducer, { ...initialApiKeysState })
-      .whenActionIsDispatched(includeExpiredToggled())
-      .thenStateShouldEqual({
-        ...initialApiKeysState,
-        includeExpired: true,
-      });
-  });
-
-  it('should set state when fetching', () => {
-    reducerTester<ApiKeysState>()
-      .givenReducer(apiKeysReducer, { ...initialApiKeysState })
-      .whenActionIsDispatched(isFetching())
-      .thenStateShouldEqual({
-        ...initialApiKeysState,
-        hasFetched: false,
       });
   });
 });

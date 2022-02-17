@@ -9,7 +9,7 @@ export const plugin = new PanelPlugin<PanelOptions>(NewsPanel).setPanelOptions((
     .addTextInput({
       path: 'feedUrl',
       name: 'URL',
-      description: 'Supports RSS and Atom feeds',
+      description: 'Only RSS feed formats are supported (not Atom).',
       settings: {
         placeholder: DEFAULT_FEED_URL,
       },

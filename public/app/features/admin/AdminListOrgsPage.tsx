@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { FC, useEffect } from 'react';
 import { getNavModel } from 'app/core/selectors/navModel';
 import Page from 'app/core/components/Page/Page';
 import { useSelector } from 'react-redux';
@@ -22,7 +22,7 @@ const getErrorMessage = (error: any) => {
   return error?.data?.message || 'An unexpected error happened.';
 };
 
-export default function AdminListOrgsPages() {
+export const AdminListOrgsPages: FC = () => {
   const navIndex = useSelector((state: StoreState) => state.navIndex);
   const navModel = getNavModel(navIndex, 'global-orgs');
   const [state, fetchOrgs] = useAsyncFn(async () => await getOrgs(), []);
@@ -56,4 +56,6 @@ export default function AdminListOrgsPages() {
       </Page.Contents>
     </Page>
   );
-}
+};
+
+export default AdminListOrgsPages;

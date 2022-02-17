@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { GrafanaTheme2, QueryEditorProps } from '@grafana/data';
+import { QueryEditorProps } from '@grafana/data';
 import {
   ButtonCascader,
   CascaderOption,
@@ -9,7 +9,6 @@ import {
   RadioButtonGroup,
   useTheme2,
   QueryField,
-  useStyles2,
 } from '@grafana/ui';
 import { notifyApp } from 'app/core/actions';
 import { createErrorNotification } from 'app/core/copy/appNotification';
@@ -24,19 +23,9 @@ import { ZipkinQuery, ZipkinQueryType, ZipkinSpan } from './types';
 
 type Props = QueryEditorProps<ZipkinDatasource, ZipkinQuery>;
 
-const getStyles = (theme: GrafanaTheme2) => {
-  return {
-    tracesCascader: css({
-      label: 'tracesCascader',
-      marginRight: theme.spacing(1),
-    }),
-  };
-};
-
 export const ZipkinQueryField = ({ query, onChange, onRunQuery, datasource }: Props) => {
   const serviceOptions = useServices(datasource);
   const theme = useTheme2();
-  const styles = useStyles2(getStyles);
   const { onLoadOptions, allOptions } = useLoadOptions(datasource);
 
   const onSelectTrace = useCallback(
@@ -89,13 +78,7 @@ export const ZipkinQueryField = ({ query, onChange, onRunQuery, datasource }: Pr
         </div>
       ) : (
         <InlineFieldRow>
-          <ButtonCascader
-            options={cascaderOptions}
-            onChange={onSelectTrace}
-            loadData={onLoadOptions}
-            variant="secondary"
-            buttonProps={{ className: styles.tracesCascader }}
-          >
+          <ButtonCascader options={cascaderOptions} onChange={onSelectTrace} loadData={onLoadOptions}>
             Traces
           </ButtonCascader>
           <div className="gf-form gf-form--grow flex-shrink-1 min-width-15">

@@ -16,7 +16,6 @@ export const RATE_RANGES: CompletionItem[] = [
 ];
 
 export const OPERATORS = ['by', 'group_left', 'group_right', 'ignoring', 'on', 'offset', 'without'];
-export const LOGICAL_OPERATORS = ['or', 'and', 'unless'];
 
 const AGGREGATION_OPERATORS: CompletionItem[] = [
   {
@@ -428,9 +427,7 @@ export const FUNCTIONS = [
   },
 ];
 
-export const PROM_KEYWORDS = FUNCTIONS.map((keyword) => keyword.label);
-
-export const promqlGrammar: Grammar = {
+const tokenizer: Grammar = {
   comment: {
     pattern: /#.*/,
   },
@@ -496,4 +493,4 @@ export const promqlGrammar: Grammar = {
   punctuation: /[{};()`,.]/,
 };
 
-export default promqlGrammar;
+export default tokenizer;

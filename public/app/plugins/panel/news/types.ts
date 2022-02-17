@@ -7,15 +7,15 @@ export interface NewsItem {
 }
 
 /**
- * Helper interface for feed parser
+ * Helper class for rss-parser
  */
-export interface Feed {
+export interface RssFeed {
   title?: string;
   description?: string;
-  items: FeedItem[];
+  items: RssItem[];
 }
 
-export interface FeedItem {
+export interface RssItem {
   title: string;
   link: string;
   pubDate?: string;

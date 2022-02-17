@@ -12,8 +12,7 @@ jest.mock('app/core/core', () => {
 
 const setup = (propOverrides?: object) => {
   const props: Props = {
-    canSave: false,
-    canDelete: false,
+    isReadOnly: true,
     onSubmit: jest.fn(),
     onDelete: jest.fn(),
     onTest: jest.fn(),
@@ -34,8 +33,7 @@ describe('Render', () => {
 
   it('should render with buttons enabled', () => {
     const wrapper = setup({
-      canSave: true,
-      canDelete: true,
+      isReadOnly: false,
     });
 
     expect(wrapper).toMatchSnapshot();

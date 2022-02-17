@@ -1,5 +1,4 @@
-import React, { useRef } from 'react';
-import { GroupBase, OptionsOrGroups } from 'react-select';
+import React from 'react';
 import { InlineField, Input, Select, TimeZonePicker } from '@grafana/ui';
 import { DateHistogram } from '../aggregations';
 import { bucketAggregationConfig } from '../utils';
@@ -21,19 +20,16 @@ const defaultIntervalOptions: Array<SelectableValue<string>> = [
   { label: '1d', value: '1d' },
 ];
 
-const hasValue =
-  (searchValue: string) =>
-  ({ value }: SelectableValue<string>) =>
-    value === searchValue;
+const hasValue = (searchValue: string) => ({ value }: SelectableValue<string>) => value === searchValue;
 
 const isValidNewOption = (
   inputValue: string,
   _: SelectableValue<string> | null,
-  options: OptionsOrGroups<unknown, GroupBase<unknown>>
+  options: Readonly<Array<SelectableValue<string>>>
 ) => {
   // TODO: would be extremely nice here to allow only template variables and values that are
   // valid date histogram's Interval options
-  const valueExists = (options as Array<SelectableValue<string>>).some(hasValue(inputValue));
+  const valueExists = options.some(hasValue(inputValue));
   // we also don't want users to create "empty" values
   return !valueExists && inputValue.trim().length > 0;
 };
@@ -47,7 +43,6 @@ interface Props {
 
 export const DateHistogramSettingsEditor = ({ bucketAgg }: Props) => {
   const dispatch = useDispatch();
-  const { current: baseId } = useRef(uniqueId('es-date_histogram-'));
 
   const handleIntervalChange = ({ value }: SelectableValue<string>) =>
     dispatch(changeBucketAggregationSetting({ bucketAgg, settingName: 'interval', newValue: value }));
@@ -70,7 +65,6 @@ export const DateHistogramSettingsEditor = ({ bucketAgg }: Props) => {
 
       <InlineField label="Min Doc Count" {...inlineFieldProps}>
         <Input
-          id={`${baseId}-min_doc_count`}
           onBlur={(e) =>
             dispatch(
               changeBucketAggregationSetting({ bucketAgg, settingName: 'min_doc_count', newValue: e.target.value })
@@ -84,7 +78,6 @@ export const DateHistogramSettingsEditor = ({ bucketAgg }: Props) => {
 
       <InlineField label="Trim Edges" {...inlineFieldProps} tooltip="Trim the edges on the timeseries datapoints">
         <Input
-          id={`${baseId}-trime_edges`}
           onBlur={(e) =>
             dispatch(changeBucketAggregationSetting({ bucketAgg, settingName: 'trimEdges', newValue: e.target.value }))
           }
@@ -100,7 +93,6 @@ export const DateHistogramSettingsEditor = ({ bucketAgg }: Props) => {
         tooltip="Change the start value of each bucket by the specified positive (+) or negative offset (-) duration, such as 1h for an hour, or 1d for a day"
       >
         <Input
-          id={`${baseId}-offset`}
           onBlur={(e) =>
             dispatch(changeBucketAggregationSetting({ bucketAgg, settingName: 'offset', newValue: e.target.value }))
           }

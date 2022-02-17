@@ -164,7 +164,7 @@ export function TemplateSrvStub(this: any) {
   };
   this.fillVariableValuesForUrl = () => {};
   this.updateIndex = () => {};
-  this.containsTemplate = () => {
+  this.variableExists = () => {
     return false;
   };
   this.variableInitialized = () => {};

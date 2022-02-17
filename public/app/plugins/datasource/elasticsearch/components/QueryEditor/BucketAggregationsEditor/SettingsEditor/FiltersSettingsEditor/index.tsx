@@ -1,21 +1,18 @@
 import { InlineField, Input, QueryField } from '@grafana/ui';
 import { css } from '@emotion/css';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { AddRemove } from '../../../../AddRemove';
 import { useDispatch, useStatelessReducer } from '../../../../../hooks/useStatelessReducer';
 import { Filters } from '../../aggregations';
 import { changeBucketAggregationSetting } from '../../state/actions';
 import { addFilter, changeFilter, removeFilter } from './state/actions';
 import { reducer as filtersReducer } from './state/reducer';
-import { uniqueId } from 'lodash';
 
 interface Props {
   bucketAgg: Filters;
 }
 
 export const FiltersSettingsEditor = ({ bucketAgg }: Props) => {
-  const { current: baseId } = useRef(uniqueId('es-filters-'));
-
   const upperStateDispatch = useDispatch();
 
   const dispatch = useStatelessReducer(
@@ -47,12 +44,12 @@ export const FiltersSettingsEditor = ({ bucketAgg }: Props) => {
               display: flex;
             `}
           >
-            <InlineField label="Query" labelWidth={8}>
-              <div
-                className={css`
-                  width: 150px;
-                `}
-              >
+            <div
+              className={css`
+                width: 250px;
+              `}
+            >
+              <InlineField label="Query" labelWidth={10}>
                 <QueryField
                   placeholder="Lucene Query"
                   portalOrigin="elasticsearch"
@@ -60,12 +57,10 @@ export const FiltersSettingsEditor = ({ bucketAgg }: Props) => {
                   onChange={(query) => dispatch(changeFilter({ index, filter: { ...filter, query } }))}
                   query={filter.query}
                 />
-              </div>
-            </InlineField>
-            <InlineField label="Label" labelWidth={8}>
+              </InlineField>
+            </div>
+            <InlineField label="Label" labelWidth={10}>
               <Input
-                width={16}
-                id={`${baseId}-label-${index}`}
                 placeholder="Label"
                 onBlur={(e) => dispatch(changeFilter({ index, filter: { ...filter, label: e.target.value } }))}
                 defaultValue={filter.label}

@@ -17,9 +17,7 @@ exports[`Render should render group sync page 1`] = `
   <PageContents
     isLoading={true}
   >
-    <Connect(TeamGroupSync)
-      isReadOnly={false}
-    />
+    <Connect(TeamGroupSync) />
   </PageContents>
 </Page>
 `;

@@ -36,7 +36,6 @@ const ResourceGroupsField: React.FC<ResourceGroupsFieldProps> = ({
         onChange={handleChange}
         options={options}
         width={38}
-        allowCustomValue
       />
     </Field>
   );

@@ -100,11 +100,7 @@ export default class CloudMonitoringMetricFindQuery {
       return [];
     }
     const refId = 'handleLabelValuesQuery';
-    // REDUCE_MEAN is needed so the groupBy is not ignored
-    const labels = await this.datasource.getLabels(selectedMetricType, refId, projectName, {
-      groupBys: [labelKey],
-      crossSeriesReducer: 'REDUCE_MEAN',
-    });
+    const labels = await this.datasource.getLabels(selectedMetricType, refId, projectName, [labelKey]);
     const interpolatedKey = this.datasource.templateSrv.replace(labelKey);
     const values = labels.hasOwnProperty(interpolatedKey) ? labels[interpolatedKey] : [];
     return values.map(this.toFindQueryResult);

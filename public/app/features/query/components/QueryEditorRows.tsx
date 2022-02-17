@@ -11,8 +11,8 @@ import {
   PanelData,
 } from '@grafana/data';
 import { QueryEditorRow } from './QueryEditorRow';
-import { DragDropContext, DragStart, Droppable, DropResult } from 'react-beautiful-dnd';
-import { getDataSourceSrv, reportInteraction } from '@grafana/runtime';
+import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
+import { getDataSourceSrv } from '@grafana/runtime';
 
 interface Props {
   // The query configuration
@@ -81,18 +81,8 @@ export class QueryEditorRows extends PureComponent<Props> {
     );
   }
 
-  onDragStart = (result: DragStart) => {
-    const { queries, dsSettings } = this.props;
-
-    reportInteraction('query_row_reorder_started', {
-      startIndex: result.source.index,
-      numberOfQueries: queries.length,
-      datasourceType: dsSettings.type,
-    });
-  };
-
   onDragEnd = (result: DropResult) => {
-    const { queries, onQueriesChange, dsSettings } = this.props;
+    const { queries, onQueriesChange } = this.props;
 
     if (!result || !result.destination) {
       return;
@@ -101,12 +91,6 @@ export class QueryEditorRows extends PureComponent<Props> {
     const startIndex = result.source.index;
     const endIndex = result.destination.index;
     if (startIndex === endIndex) {
-      reportInteraction('query_row_reorder_canceled', {
-        startIndex,
-        endIndex,
-        numberOfQueries: queries.length,
-        datasourceType: dsSettings.type,
-      });
       return;
     }
 
@@ -114,20 +98,13 @@ export class QueryEditorRows extends PureComponent<Props> {
     const [removed] = update.splice(startIndex, 1);
     update.splice(endIndex, 0, removed);
     onQueriesChange(update);
-
-    reportInteraction('query_row_reorder_ended', {
-      startIndex,
-      endIndex,
-      numberOfQueries: queries.length,
-      datasourceType: dsSettings.type,
-    });
   };
 
   render() {
     const { dsSettings, data, queries, app, history, eventBus } = this.props;
 
     return (
-      <DragDropContext onDragStart={this.onDragStart} onDragEnd={this.onDragEnd}>
+      <DragDropContext onDragEnd={this.onDragEnd}>
         <Droppable droppableId="transformations-list" direction="vertical">
           {(provided) => {
             return (

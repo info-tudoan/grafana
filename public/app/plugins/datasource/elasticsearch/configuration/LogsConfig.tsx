@@ -1,5 +1,6 @@
 import React from 'react';
-import { Input, InlineField, FieldSet } from '@grafana/ui';
+import { LegacyForms } from '@grafana/ui';
+const { FormField } = LegacyForms;
 import { ElasticsearchOptions } from '../types';
 
 type Props = {
@@ -8,34 +9,38 @@ type Props = {
 };
 export const LogsConfig = (props: Props) => {
   const { value, onChange } = props;
-  const changeHandler =
-    (key: keyof ElasticsearchOptions) => (event: React.SyntheticEvent<HTMLInputElement | HTMLSelectElement>) => {
-      onChange({
-        ...value,
-        [key]: event.currentTarget.value,
-      });
-    };
+  const changeHandler = (key: keyof ElasticsearchOptions) => (
+    event: React.SyntheticEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    onChange({
+      ...value,
+      [key]: event.currentTarget.value,
+    });
+  };
 
   return (
-    <FieldSet label="Logs">
-      <InlineField label="Message field name" labelWidth={22}>
-        <Input
-          id="es_logs-config_logMessageField"
-          value={value.logMessageField}
-          onChange={changeHandler('logMessageField')}
-          placeholder="_source"
-          width={24}
-        />
-      </InlineField>
+    <>
+      <h3 className="page-heading">Logs</h3>
 
-      <InlineField label="Level field name" labelWidth={22}>
-        <Input
-          id="es_logs-config_logLevelField"
-          value={value.logLevelField}
-          onChange={changeHandler('logLevelField')}
-          width={24}
-        />
-      </InlineField>
-    </FieldSet>
+      <div className="gf-form-group">
+        <div className="gf-form max-width-30">
+          <FormField
+            labelWidth={11}
+            label="Message field name"
+            value={value.logMessageField}
+            onChange={changeHandler('logMessageField')}
+            placeholder="_source"
+          />
+        </div>
+        <div className="gf-form max-width-30">
+          <FormField
+            labelWidth={11}
+            label="Level field name"
+            value={value.logLevelField}
+            onChange={changeHandler('logLevelField')}
+          />
+        </div>
+      </div>
+    </>
   );
 };

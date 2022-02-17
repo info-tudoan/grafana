@@ -19,7 +19,6 @@ Panel: {
         [
             {
                 PanelOptions: {
-                    layout?: *"list" | "previews"
                     showStarred: bool | *true
                     showRecentlyViewed: bool | *false
                     showSearch: bool | *false

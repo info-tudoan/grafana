@@ -1,0 +1,57 @@
+nav.sidemenu {
+  background-color: #091C50 !important;
+
+  div {
+    div {
+      color: rgba(255, 255, 255, 0.75);
+    }
+  }
+
+  .navbar-dropdown {
+    li {
+      a, button {
+        div {
+          color: #091C50;
+        }
+      }
+    }
+  }
+}
+
+//.scrollbar-view {
+//  margin-top: 16px;
+//}
+//
+//.page-toolbar {
+//  display: none !important;
+//}
+//
+//.react-resizable-handle {
+//  display: none;
+//}
+
+.panel-container {
+  border-radius: 8px;
+  border: 1px solid #FFFFFF !important;
+
+  .panel-title {
+    border-bottom: 1px solid #F4F4F4;
+    justify-content: left;
+    padding-left: 20px;
+
+    h2 {
+      color: #091C50;
+      font-size: 16px;
+    }
+  }
+
+  .pointer {
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 9px !important;
+  }
+
+  .scrollbar-view {
+    padding: 20px 10px;
+  }
+}

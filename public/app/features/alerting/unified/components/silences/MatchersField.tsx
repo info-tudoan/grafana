@@ -128,7 +128,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       min-width: 140px;
     `,
     matchers: css`
-      max-width: ${theme.breakpoints.values.sm}px;
+      max-width: 585px;
       margin: ${theme.spacing(1)} 0;
       padding-top: ${theme.spacing(0.5)};
     `,

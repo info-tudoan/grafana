@@ -40,7 +40,6 @@ const NamespaceField: React.FC<NamespaceFieldProps> = ({
         onChange={handleChange}
         options={options}
         width={38}
-        allowCustomValue
       />
     </Field>
   );

@@ -46,7 +46,6 @@ export const AlertManagerPicker: FC<Props> = ({ onChange, current, disabled = fa
       data-testid="alertmanager-picker"
     >
       <Select
-        aria-label={disabled ? 'Alertmanager' : 'Choose Alertmanager'}
         menuShouldPortal
         width={29}
         className="ds-picker select-container"

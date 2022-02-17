@@ -1,5 +1,4 @@
 import { DataSourceWithBackend } from '@grafana/runtime';
-
 import { DataSourceInstanceSettings } from '../../../../../../packages/grafana-data/src';
 import {
   locationDisplayNames,
@@ -7,7 +6,7 @@ import {
   logsSupportedResourceTypesKusto,
   resourceTypeDisplayNames,
 } from '../azureMetadata';
-import { ResourceRow, ResourceRowGroup, ResourceRowType } from '../components/ResourcePicker/types';
+import { ResourceRowType, ResourceRow, ResourceRowGroup } from '../components/ResourcePicker/types';
 import { parseResourceURI } from '../components/ResourcePicker/utils';
 import {
   AzureDataSourceJsonData,
@@ -17,7 +16,6 @@ import {
   AzureResourceSummaryItem,
   RawAzureResourceGroupItem,
   RawAzureResourceItem,
-  RawAzureSubscriptionItem,
 } from '../types';
 import { routeNames } from '../utils/common';
 
@@ -33,61 +31,29 @@ export default class ResourcePickerData extends DataSourceWithBackend<AzureMonit
 
   static readonly templateVariableGroupID = '$$grafana-templateVariables$$';
 
-  async getSubscriptions(): Promise<ResourceRowGroup> {
+  async getResourcePickerData() {
     const query = `
-    resources
-    | join kind=inner (
-              ResourceContainers
-                | where type == 'microsoft.resources/subscriptions'
-                | project subscriptionName=name, subscriptionURI=id, subscriptionId
-              ) on subscriptionId
-    | summarize count() by subscriptionName, subscriptionURI, subscriptionId
-    | order by subscriptionName desc
-  `;
+      resources
+        // Put subscription details on each row
+        | join kind=leftouter (
+          ResourceContainers
+            | where type == 'microsoft.resources/subscriptions'
+            | project subscriptionName=name, subscriptionURI=id, subscriptionId
+          ) on subscriptionId
 
-    let resources: RawAzureSubscriptionItem[] = [];
+        // Put resource group details on each row
+        | join kind=leftouter (
+          ResourceContainers
+            | where type == 'microsoft.resources/subscriptions/resourcegroups'
+            | project resourceGroupURI=id, resourceGroupName=name, resourceGroup
+          ) on resourceGroup
 
-    let allFetched = false;
-    let $skipToken = undefined;
-    while (!allFetched) {
-      // The response may include several pages
-      let options: Partial<AzureResourceGraphOptions> = {};
-      if ($skipToken) {
-        options = {
-          $skipToken,
-        };
-      }
-      const resourceResponse = await this.makeResourceGraphRequest<RawAzureSubscriptionItem[]>(query, 1, options);
-      if (!resourceResponse.data.length) {
-        throw new Error('unable to fetch resource details');
-      }
-      resources = resources.concat(resourceResponse.data);
-      $skipToken = resourceResponse.$skipToken;
-      allFetched = !$skipToken;
-    }
+        | where type in (${logsSupportedResourceTypesKusto})
 
-    return resources.map((subscription) => ({
-      name: subscription.subscriptionName,
-      id: subscription.subscriptionId,
-      typeLabel: 'Subscription',
-      type: ResourceRowType.Subscription,
-      children: [],
-    }));
-  }
-
-  async getResourceGroupsBySubscriptionId(subscriptionId: string) {
-    const query = `
-    resources
-     | join kind=inner (
-       ResourceContainers
-       | where type == 'microsoft.resources/subscriptions/resourcegroups'
-       | project resourceGroupURI=id, resourceGroupName=name, resourceGroup, subscriptionId
-     ) on resourceGroup, subscriptionId
-
-     | where type in (${logsSupportedResourceTypesKusto})
-     | where subscriptionId == '${subscriptionId}'
-     | summarize count() by resourceGroupName, resourceGroupURI
-     | order by resourceGroupURI asc`;
+        // Get only unique resource groups and subscriptions. Also acts like a project
+        | summarize count() by resourceGroupName, resourceGroupURI, subscriptionName, subscriptionURI
+        | order by subscriptionURI asc
+    `;
 
     let resources: RawAzureResourceGroupItem[] = [];
     let allFetched = false;
@@ -109,19 +75,13 @@ export default class ResourcePickerData extends DataSourceWithBackend<AzureMonit
       allFetched = !$skipToken;
     }
 
-    return resources.map((r) => ({
-      name: r.resourceGroupName,
-      id: r.resourceGroupURI,
-      type: ResourceRowType.ResourceGroup,
-      typeLabel: 'Resource Group',
-      children: [],
-    }));
+    return formatResourceGroupData(resources);
   }
 
-  async getResourcesForResourceGroup(resourceGroupId: string) {
+  async getResourcesForResourceGroup(resourceGroup: ResourceRow) {
     const { data: response } = await this.makeResourceGraphRequest<RawAzureResourceItem[]>(`
       resources
-      | where id hasprefix "${resourceGroupId}"
+      | where id hasprefix "${resourceGroup.id}"
       | where type in (${logsSupportedResourceTypesKusto}) and location in (${logsSupportedLocationsKusto})
     `);
 
@@ -141,13 +101,13 @@ export default class ResourcePickerData extends DataSourceWithBackend<AzureMonit
     const resourceGroupURI = `${subscriptionURI}/resourceGroups/${resourceGroup}`;
 
     const query = `
-    resourcecontainers
-    | where type == "microsoft.resources/subscriptions"
-    | where id =~ "${subscriptionURI}"
-    | project subscriptionName=name, subscriptionId
+      resourcecontainers
+        | where type == "microsoft.resources/subscriptions"
+        | where id =~ "${subscriptionURI}"
+        | project subscriptionName=name, subscriptionId
 
-    | join kind=leftouter (
-      resourcecontainers            
+        | join kind=leftouter (
+          resourcecontainers
             | where type == "microsoft.resources/subscriptions/resourcegroups"
             | where id =~ "${resourceGroupURI}"
             | project resourceGroupName=name, resourceGroup, subscriptionId
@@ -221,6 +181,44 @@ export default class ResourcePickerData extends DataSourceWithBackend<AzureMonit
       })),
     };
   }
+}
+
+function formatResourceGroupData(rawData: RawAzureResourceGroupItem[]) {
+  // Subscriptions goes into the top level array
+  const rows: ResourceRowGroup = [];
+
+  // Array of all the resource groups, with subscription data on each row
+  for (const row of rawData) {
+    const resourceGroupRow: ResourceRow = {
+      name: row.resourceGroupName,
+      id: row.resourceGroupURI,
+      type: ResourceRowType.ResourceGroup,
+      typeLabel: 'Resource Group',
+      children: [],
+    };
+
+    const subscription = rows.find((v) => v.id === row.subscriptionURI);
+
+    if (subscription) {
+      if (!subscription.children) {
+        subscription.children = [];
+      }
+
+      subscription.children.push(resourceGroupRow);
+    } else {
+      const newSubscriptionRow = {
+        name: row.subscriptionName,
+        id: row.subscriptionURI,
+        typeLabel: 'Subscription',
+        type: ResourceRowType.Subscription,
+        children: [resourceGroupRow],
+      };
+
+      rows.push(newSubscriptionRow);
+    }
+  }
+
+  return rows;
 }
 
 function formatResourceGroupChildren(rawData: RawAzureResourceItem[]): ResourceRowGroup {

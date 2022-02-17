@@ -3,19 +3,6 @@
   "panels": [
     {
       "datasource": null,
-      "gridPos": {
-        "h": 3,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "title": "",
-      "transparent": false,
-      "type": "welcome"
-    },
-    {
-      "datasource": null,
       "folderId": 0,
       "gridPos": {
         "h": 15,
@@ -31,26 +18,10 @@
       "query": "",
       "recent": true,
       "search": false,
-      "starred": true,
+      "starred": false,
       "tags": [],
-      "title": "Dashboards",
+      "title": "WY Engage Dashboards",
       "type": "dashlist"
-    },
-    {
-      "datasource": null,
-      "gridPos": {
-        "h": 15,
-        "w": 12,
-        "x": 12,
-        "y": 4
-      },
-      "id": 4,
-      "links": [],
-      "options": {
-        "feedUrl": "https://grafana.com/blog/news.xml"
-      },
-      "title": "Latest from the blog",
-      "type": "news"
     }
   ],
   "schemaVersion": 22,
@@ -69,5 +40,5 @@
     "type": "timepicker"
   },
   "timezone": "browser",
-  "title": "Home"
+  "title": "WY Engage"
 }

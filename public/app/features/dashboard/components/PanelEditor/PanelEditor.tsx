@@ -253,7 +253,7 @@ export class PanelEditorUnconnected extends PureComponent<Props> {
                       panel={panel}
                       isEditing={true}
                       isViewing={false}
-                      lazy={false}
+                      isInView={true}
                       width={panelSize.width}
                       height={panelSize.height}
                       skipStateCleanUp={true}
